@@ -7,15 +7,16 @@ The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sen
 
 ### Configuration
 
-See config.ini and amend for your own needs. The Inverter_Position parameter defines the phsical contact for this inverter. 0 means AC-In
+See config.ini and amend for your own needs.
 
-In [Topics] section you can specify a unlimited number of topics per phase. If multiple topics are assigned to one phase the current and power values will be added to a total for this phase
+In [Topics] section you can specify the L1 phase topic and the status topic
+in [Warnings] section you can specify the High temperature alarm limit and the overload alarm limit (10% tolerance will be added during calculation)
 
 Example:
 
-    `L1 = topic1[,topic2,topic3]`
+    `L1 = tele/tasmota_4B0B98/SENSOR`
 
-    `L3 = topic4`
+    `CONFIG = tele/tasmota_4B0B98/STATE`
 
 ### Installation
 
@@ -38,18 +39,9 @@ Example:
    - /data/dbus-tasmota-inverter/vedbus.py
    - /data/dbus-tasmota-inverter/ve_utils.py
 
-4. Add a symlink to the file /data/rc.local:
+4. Add a symlink your service directory :
 
    `ln -s /data/dbus-tasmota-inverter /opt/victronenergy/service/dbus-tasmota-inverter`
-
-   Or if that file does not exist yet, store the file rc.local from this service on your Raspberry Pi as /data/rc.local .
-   You can then create the symlink by just running rc.local:
-
-   make it executable with
-
-   `chmod 755 /data/rc.local`
-
-   `/data/rc.local`
 
    The daemon-tools should automatically start this service within seconds.
 
