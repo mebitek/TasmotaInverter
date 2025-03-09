@@ -41,7 +41,7 @@ Example:
 
 4. Add a symlink your service directory :
 
-   `ln -s /data/dbus-tasmota-inverter /opt/victronenergy/service/dbus-tasmota-inverter`
+   `ln -s /data/dbus-tasmota-inverter/service /opt/victronenergy/service/dbus-tasmota-inverter`
 
    The daemon-tools should automatically start this service within seconds.
 
