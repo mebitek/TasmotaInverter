@@ -1,5 +1,4 @@
 #!/bin/sh
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 exec 2>&1
-python $(realpath $SCRIPT_DIR/../dbus-tasmota-inverter.py)
+exec softlimit -d 100000000 -s 1000000 -a 100000000 /data/dbus-tasmota-inverter/dbus-tasmota-inverter.py

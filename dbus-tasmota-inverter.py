@@ -27,7 +27,7 @@ import time
 import logging
 from logging.handlers import RotatingFileHandler
 import platform
-from gi.repository import GLib as gobject  # Python 3.x
+from gi.repository import GLib
 import _thread as thread   # for daemon = True  / Python 3.x
 
 sys.path.insert(1, os.path.join(
@@ -100,6 +100,8 @@ def connectBroker():
     except Exception as e:
         logger.exception("Error in Connect to Broker")
         logger.exception(e)
+        logger.debug("Retrying...")
+        connectBroker()
 
 def getPosition():
     return int(config.get('Setup','Inverter_Position', fallback = 0))
@@ -195,7 +197,7 @@ client.on_message = on_message
 
 class DbusDummyService:
     def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT'):
-        self._dbusservice = VeDbusService(servicename)
+        self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
 
         logger.debug("%s /DeviceInstance = %d" %
@@ -222,11 +224,8 @@ class DbusDummyService:
             self._dbusservice.add_path(
                 path, settings['initial'], writeable=True, onchangecallback=self._handlechangedvalue)
 
-        # pause 1000ms before the next request
-        gobject.timeout_add(1000, self._update)
-
-        # add _signOfLife 'timer' to get feedback in log every 5minutes
-        gobject.timeout_add(5 * 60 * 1000, self._signOfLife)
+        self._dbusservice.register()
+        GLib.timeout_add(1000, self._update)
 
     def _signOfLife(self):
         logger.info("Service is running")
@@ -311,9 +310,8 @@ def main():
             '/UpdateIndex': {'initial': 0},
         })
 
-    logger.info(
-        'Connected to dbus, and switching over to gobject.MainLoop() (= event based)')
-    mainloop = gobject.MainLoop()
+    logging.info('Connected to dbus, and switching over to GLib.MainLoop() (= event based)')
+    mainloop = GLib.MainLoop()
     mainloop.run()
 
 
