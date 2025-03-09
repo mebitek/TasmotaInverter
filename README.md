@@ -3,7 +3,7 @@ Service to integrate a tasmota wallplug sensor data as inverter
 
 based on the work of [Waldmensch1](https://github.com/Waldmensch1/venus.dbus-tasmota-inverter)
 
-The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. You can configure 3 topics, one for each phase. These will send the values to dbus.
+The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. These will send the values to dbus. The script will check High Temperature and Overload alarms.
 
 ### Configuration
 
