@@ -15,7 +15,6 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 """
 
-
 # our own packages
 import configparser
 from vedbus import VeDbusService
@@ -28,17 +27,39 @@ import logging
 from logging.handlers import RotatingFileHandler
 import platform
 from gi.repository import GLib
-import _thread as thread   # for daemon = True  / Python 3.x
+import _thread as thread  # for daemon = True  / Python 3.x
+
+
+class Inverter:
+    def __init__(self, status, voltage, current, power, temperature):
+        self.status = status
+        self.voltage = voltage
+        self.current = current
+        self.power = power
+        self.temperature = temperature
+
+    def get_mode_and_state(self):
+        # /Mode  <- Switch position: 1=Charger only,2=Inverter only;3=On;4=Off;5=Low Power/Eco;
+        #           251=Passthrough;252=Standby;253=Hibernate
+        # /State <- 0=Off; 1=Low Power; 2=Fault; 9=Inverting
+        if self.status == 'ON':
+            if self.power > 15:
+                return 2, 9
+            else:
+                return 5, 1
+        else:
+            return 4, 0
+
 
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
 
-os.makedirs('/var/log/dbus-tasmota-inverter', exist_ok=True) 
+os.makedirs('/var/log/dbus-tasmota-inverter', exist_ok=True)
 logging.basicConfig(
-    format = '%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-    datefmt = '%Y-%m-%d %H:%M:%S',
-    level = logging.DEBUG,
-    handlers = [
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    level=logging.DEBUG,
+    handlers=[
         logging.StreamHandler()
     ]
 )
@@ -50,50 +71,57 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.info("Service Startup")
 
-config = None
-inverter = None
+config = configparser.ConfigParser()
+inverter = Inverter("OFF", 0, 0, 0, 0)
 
-def getConfig():
-    config = configparser.ConfigParser()
+
+def get_config():
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config
 
-def getMQTTName():
-    return config.get('MQTTBroker','name', fallback = 'MQTT_to_Inverter')
 
-def getMQTTAddress():
-    address = config.get('MQTTBroker','address', fallback = None)
-    if address == None:
+def get_mqtt_name():
+    return config.get('MQTTBroker', 'name', fallback='MQTT_to_Inverter')
+
+
+def get_mqtt_address():
+    address = config.get('MQTTBroker', 'address', fallback=None)
+    if address is None:
         logger.error("No MQTT Broker set in config.ini")
         return address
     else:
         return address
 
-def getHighTemperatureLimit():
-    return config.get('Warnings','HighTemperature', fallback = 65)
 
-def getOverloadLimit():
-    overload = float(config.get('Warnings','Overload', fallback = 1500))
+def get_high_temperature_limit():
+    return config.get('Warnings', 'HighTemperature', fallback=65)
+
+
+def get_overload_limit():
+    overload = float(config.get('Warnings', 'Overload', fallback=1500))
     return overload * 0.1 + overload
 
-def getProductName():
-    return config.get('Setup','Name', fallback = "Tasmota Inverter")
 
-def getMQTTPort():
-    port = config.get('MQTTBroker','port', fallback = None)
-    if port != None:
+def get_product_name():
+    return config.get('Setup', 'Name', fallback="Tasmota Inverter")
+
+
+def get_mqtt_port():
+    port = config.get('MQTTBroker', 'port', fallback=None)
+    if port is not None:
         return int(port)
     else:
         return 1883
 
-def connectBroker(client):
-    broker_address = getMQTTAddress()
-    broker_port = getMQTTPort()
+
+def connect_broker(client):
+    broker_address = get_mqtt_address()
+    broker_port = get_mqtt_port()
 
     try:
         logger.info('connecting to MQTTBroker ' + broker_address + ' on Port ' + str(broker_port))
 
-        if broker_address != None:
+        if broker_address is not None:
             client.connect(broker_address, port=broker_port)  # connect to broker
             client.loop_start()
         else:
@@ -102,61 +130,53 @@ def connectBroker(client):
         logger.exception("Error in Connect to Broker")
         logger.exception(e)
         logger.debug("Retrying...")
-        connectBroker()
+        connect_broker(client)
 
-def getPosition():
-    return int(config.get('Setup','Inverter_Position', fallback = 0))
 
 # prepare dict
-tasmota_devices = {}
 topic_category = {}
 
 # get topics for a single phase
-def getTopic(phase):
-    strtopics = config.get('Topics', phase, fallback ='')
+def get_topic(phase):
+    strtopics = config.get('Topics', phase, fallback='')
     if strtopics != '':
         topics = strtopics.split(',')
         for topic in topics:
             t = topic.strip()
-            if t not in tasmota_devices:
-                if phase == 'CONFIG':
-                    tasmota_devices[t] = {'status': 'OFF'}
-                else:
-                    tasmota_devices[t] = {'phase' : phase, 'power': 0, 'voltage': 0, 'current': 0, 'total': 0, 'temperature': 0}
-
+            if t not in topic_category:
                 logger.info("Topic added to " + phase + ": " + t)
                 topic_category[t] = phase
             else:
-                logger.info("Cannot add topic " + t + " as it is already added to " + tasmota_devices[t]['phase'])
+                logger.info("Cannot add topic " + t + " as it is already added to " + topic_category[t])
+
 
 # get topics for all phases
-def getTopics():
-    getTopic('L1')
-    getTopic('CONFIG')
-    
+def get_topics():
+    get_topic('L1')
+    get_topic('CONFIG')
+
+
 # MQTT Abfragen:
 def on_disconnect(client, userdata, rc):
     logger.info("Client Got Disconnected")
     if rc != 0:
         logger.info('Unexpected MQTT disconnection. Will auto-reconnect')
-
     else:
         logger.info('rc value:' + str(rc))
-
     try:
         logger.info("Trying to Reconnect")
-        connectBroker()
+        connect_broker(client)
     except Exception as e:
         logger.exception("Error in Retrying to Connect with Broker")
         logger.exception(e)
 
+
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         logger.info("Connected to MQTT Broker!")
-
         # subscribe to all topics we have in dict
-        if len(tasmota_devices) > 0:
-            for topic in tasmota_devices.keys():
+        if len(topic_category) > 0:
+            for topic in topic_category.keys():
                 client.subscribe(topic)
                 logger.info("Subscribed to: " + topic)
         else:
@@ -164,13 +184,13 @@ def on_connect(client, userdata, flags, rc):
     else:
         logger.info("Failed to connect, return code %d\n", rc)
 
+
 def on_message(client, userdata, msg):
     try:
-
         logger.debug('Incoming message from: ' + msg.topic)
 
         # write the values into dict
-        if msg.topic in tasmota_devices:
+        if msg.topic in topic_category:
             jsonpayload = json.loads(msg.payload)
             if topic_category[msg.topic] == 'CONFIG':
                 inverter.status = jsonpayload['POWER']
@@ -188,27 +208,6 @@ def on_message(client, userdata, msg):
         logger.exception("Error in handling of received message payload: " + msg.payload)
         logger.exception(e)
 
-class Inverter:
-    def __init__(self, status, voltage, current, power, temperature):
-        self.status = status
-        self.voltage = voltage
-        self.current = current
-        self.power = power
-        self.temperature = temperature
-
-    def getModeAndState(self):
-        # /Mode  <- Switch position: 1=Charger only,2=Inverter only;3=On;4=Off;5=Low Power/Eco;
-        #           251=Passthrough;252=Standby;253=Hibernate
-        # /State <- 0=Off; 1=Low Power; 2=Fault; 9=Inverting
-        if self.status== 'ON':
-            if self.power > 15:
-                return 2, 9
-            else:
-                return 5, 1
-        else:
-            return 4, 0
-
-
 
 class DbusDummyService:
     def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT'):
@@ -216,9 +215,9 @@ class DbusDummyService:
         self._paths = paths
 
         logger.debug("%s /DeviceInstance = %d" %
-                      (servicename, deviceinstance))
+                     (servicename, deviceinstance))
 
-        productname = getProductName()
+        productname = get_product_name()
 
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
@@ -229,7 +228,7 @@ class DbusDummyService:
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path('/ProductId', 16)
+        self._dbusservice.add_path('/ProductId', 41370)
         self._dbusservice.add_path('/ProductName', productname)
         self._dbusservice.add_path('/FirmwareVersion', 0.2)
         self._dbusservice.add_path('/HardwareVersion', 0)
@@ -242,53 +241,48 @@ class DbusDummyService:
         self._dbusservice.register()
         GLib.timeout_add(1000, self._update)
 
-    def _signOfLife(self):
-        logger.info("Service is running")
-
     def _update(self):
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
         self._dbusservice['/Ac/Out/L1/P'] = inverter.power
-        if inverter.temperature > float(getHighTemperatureLimit()):
+
+        if inverter.temperature > float(get_high_temperature_limit()):
             self._dbusservice['/Alarms/HighTemperature'] = 1
         else:
             self._dbusservice['/Alarms/HighTemperature'] = 0
 
-        mode, state = inverter.getModeAndState()
+        mode, state = inverter.get_mode_and_state()
         self._dbusservice['/Mode'] = mode
         self._dbusservice['/State'] = state
 
-        if inverter.power > getOverloadLimit():
+        if inverter.power > get_overload_limit():
             self._dbusservice['/Alarms/Overload'] = 1
         else:
             self._dbusservice['/Alarms/Overload'] = 0
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
-        if index > 255:   # maximum value of the index
-            index = 0       # overflow from 255 to 0
+        if index > 255:  # maximum value of the index
+            index = 0  # overflow from 255 to 0
         self._dbusservice['/UpdateIndex'] = index
         return True
 
-    def _handlechangedvalue(self, path, value):
+    @staticmethod
+    def _handlechangedvalue(path, value):
         logger.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
 
 
 def main():
-
     global config
-    config = getConfig()
+    config = get_config()
 
-    global inverter
-    inverter = Inverter("OFF", 0, 0, 0, 0)
-
-    getTopics()
-    client = mqtt.Client(getMQTTName())  # create new instance
+    get_topics()
+    client = mqtt.Client(get_mqtt_name())  # create new instance
     client.on_disconnect = on_disconnect
     client.on_connect = on_connect
     client.on_message = on_message
 
-    connectBroker(client)
+    connect_broker(client)
 
     thread.daemon = True  # allow the program to quit
 
@@ -298,16 +292,17 @@ def main():
 
     pvac_output = DbusDummyService(
         servicename='com.victronenergy.inverter.tasmota',
-        deviceinstance=0,
+        deviceinstance=51,
         paths={
+            '/Dc/0/Voltage': {'initial': 0},
             '/Ac/Power': {'initial': 0},
             '/Ac/Out/L1/V': {'initial': 0},
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
             '/Alarms/HighTemperature': {'initial': 0},
             '/Alarms/Overload': {'initial': 0},
-	        '/Mode': {'initial': 2 },
-            '/State': {'initial': 0 },
+            '/Mode': {'initial': 2},
+            '/State': {'initial': 0},
             '/UpdateIndex': {'initial': 0},
         })
 
