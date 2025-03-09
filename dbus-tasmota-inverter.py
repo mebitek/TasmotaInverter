@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
 """
-Created by Waldmensch aka Waldmaus in 2023.
+Created by mebitek in 2025.
 
 Inspired by:
+ - https://github.com/Waldmensch1/venus.dbus-tasmota-inverter (base code)
  - https://github.com/Marv2190/venus.dbus-MqttToGridMeter (Inspiration)
  - https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py (Template)
 
 
 This code and its documentation can be found on: https://github.com/Waldmensch1/venus.dbus-tasmota-inverter
 Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
-Reading information from Tasmota SENSOR MQTT and puts the info on dbus as pvinverter.
+Reading information from Tasmota SENSOR MQTT and puts the info on dbus as inverter.
 
 """
 
@@ -67,6 +68,16 @@ def getMQTTAddress():
     else:
         return address
 
+def getHighTemperatureLimit():
+    return config.get('Warnings','HighTemperature', fallback = 65)
+
+def getOverloadLimit():
+    overload = float(config.get('Warnings','Overload', fallback = 1500))
+    return overload * 0.1 + overload
+
+def getProductName():
+    return config.get('Setup','Name', fallback = "Tasmota Inverter")
+
 def getMQTTPort():
     port = config.get('MQTTBroker','port', fallback = None)
     if port != None:
@@ -95,6 +106,7 @@ def getPosition():
 
 # prepare dict
 tasmota_devices = {}
+topic_category = {}
 
 # get topics for a single phase
 def getTopic(phase):
@@ -104,16 +116,20 @@ def getTopic(phase):
         for topic in topics:
             t = topic.strip()
             if t not in tasmota_devices:
-                tasmota_devices[t] = {'phase' : phase, 'power': 0, 'voltage': 0, 'current': 0, 'total': 0}
+                if phase == 'CONFIG':
+                    tasmota_devices[t] = {'status': 'OFF'}
+                else:
+                    tasmota_devices[t] = {'phase' : phase, 'power': 0, 'voltage': 0, 'current': 0, 'total': 0, 'temperature': 0}
+
                 logger.info("Topic added to " + phase + ": " + t)
+                topic_category[t] = phase
             else:
                 logger.info("Cannot add topic " + t + " as it is already added to " + tasmota_devices[t]['phase'])
 
 # get topics for all phases
 def getTopics():
     getTopic('L1')
-    getTopic('L2')
-    getTopic('L3')
+    getTopic('CONFIG')
     
 # MQTT Abfragen:
 def on_disconnect(client, userdata, rc):
@@ -153,10 +169,16 @@ def on_message(client, userdata, msg):
         # write the values into dict
         if msg.topic in tasmota_devices:
             jsonpayload = json.loads(msg.payload)
-            tasmota_devices[msg.topic]['power'] = float(jsonpayload["ENERGY"]["Power"])
-            tasmota_devices[msg.topic]['current'] = float(jsonpayload["ENERGY"]["Current"])
-            tasmota_devices[msg.topic]['voltage'] = float(jsonpayload["ENERGY"]["Voltage"])
-            tasmota_devices[msg.topic]['total'] = float(jsonpayload["ENERGY"]["Total"])
+            if topic_category[msg.topic] == 'CONFIG':
+                tasmota_devices[msg.topic]['status'] = jsonpayload['POWER']
+            else:
+                tasmota_devices[msg.topic]['power'] = float(jsonpayload["ENERGY"]["Power"])
+                tasmota_devices[msg.topic]['current'] = float(jsonpayload["ENERGY"]["Current"])
+                tasmota_devices[msg.topic]['voltage'] = float(jsonpayload["ENERGY"]["Voltage"])
+                tasmota_devices[msg.topic]['total'] = float(jsonpayload["ENERGY"]["Total"])
+                tasmota_devices[msg.topic]['temperature'] = float(jsonpayload["ESP32"]["Temperature"])
+
+
         else:
             logger.info("Topic not in configurd topics. This shouldn't be happen")
 
@@ -179,6 +201,8 @@ class DbusDummyService:
         logger.debug("%s /DeviceInstance = %d" %
                       (servicename, deviceinstance))
 
+        productname = getProductName()
+
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
         self._dbusservice.add_path(
@@ -193,9 +217,6 @@ class DbusDummyService:
         self._dbusservice.add_path('/FirmwareVersion', 0.1)
         self._dbusservice.add_path('/HardwareVersion', 0)
         self._dbusservice.add_path('/Connected', 1)
-        self._dbusservice.add_path('/StatusCode', 0)
-        self._dbusservice.add_path('/Position', getPosition())
-        self._dbusservice.add_path('/Latency', None)
 
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
@@ -212,30 +233,47 @@ class DbusDummyService:
 
     def _update(self):
 
-        vals = {'L1':{'v':0,'c':0,'p':0},
-                'L2':{'v':0,'c':0,'p':0},
-                'L3':{'v':0,'c':0,'p':0},
-                'total':{'v':0,'c':0,'p':0}}
+        vals = {'L1':{'v':0,'c':0,'p':0, 't':0},
+                'total':{'v':0,'c':0,'p':0},
+                'status': "OFF"}
 
         for tasmota_device in tasmota_devices.values():
             # the voltage is a bit a problem here, as it can differ from tasmota device to device
             # so we take the first best voltage
-            if tasmota_device['voltage'] != 0:
-                vals[tasmota_device['phase']]['v'] = tasmota_device['voltage']
-            vals[tasmota_device['phase']]['c'] += tasmota_device['current']
-            vals[tasmota_device['phase']]['p'] += tasmota_device['power']
-            # this is the sum power per phase
-            vals['total']['p'] += tasmota_device['power']
+            if 'status' in tasmota_device:
+                vals['status'] = tasmota_device['status']
+            else:
+                if tasmota_device['voltage'] != 0:
+                    vals[tasmota_device['phase']]['v'] = tasmota_device['voltage']
+                vals[tasmota_device['phase']]['c'] += tasmota_device['current']
+                vals[tasmota_device['phase']]['p'] += tasmota_device['power']
+                # this is the sum power per phase
+                vals['total']['p'] += tasmota_device['power']
+                vals[tasmota_device['phase']]['t'] = tasmota_device['temperature']
 
-        self._dbusservice['/Ac/Out/L1/V'] = vals['L1']['v']
-        self._dbusservice['/Ac/Out/L1/I'] = vals['L1']['c']
-        self._dbusservice['/Ac/Out/L1/P'] = vals['L1']['p']
-	
-        logger.info("iPOWER %s " % vals['L1']['p'])
-        if vals['L1']['p'] > 0:
-            self._dbusservice['/State'] = 9
+                self._dbusservice['/Ac/Out/L1/V'] = vals['L1']['v']
+                self._dbusservice['/Ac/Out/L1/I'] = vals['L1']['c']
+                self._dbusservice['/Ac/Out/L1/P'] = vals['L1']['p']
+                if vals[tasmota_device['phase']]['t'] > float(getHighTemperatureLimit()):
+                    self._dbusservice['/Alarms/HighTemperature'] = 1
+                else:
+                    self._dbusservice['/Alarms/HighTemperature'] = 0
+
+        if vals['status'] == 'ON':
+            if vals['L1']['p'] > 15:
+                self._dbusservice['/State'] = 9
+                self._dbusservice['/Mode'] = 2
+            else:
+                self._dbusservice['/State'] = 1
+                self._dbusservice['/Mode'] = 5
         else:
             self._dbusservice['/State'] = 0
+            self._dbusservice['/Mode'] = 4
+
+        if vals['L1']['p'] > getOverloadLimit():
+            self._dbusservice['/Alarms/Overload'] = 1
+        else:
+            self._dbusservice['/Alarms/Overload'] = 0
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
         if index > 255:   # maximum value of the index
@@ -266,7 +304,9 @@ def main():
             '/Ac/Out/L1/V': {'initial': 0},
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
-	    '/Mode': {'initial': 2 },
+            '/Alarms/HighTemperature': {'initial': 0},
+            '/Alarms/Overload': {'initial': 0},
+	        '/Mode': {'initial': 2 },
             '/State': {'initial': 0 },
             '/UpdateIndex': {'initial': 0},
         })
