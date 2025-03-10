@@ -66,17 +66,13 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler = RotatingFileHandler('/var/log/dbus-tasmota-inverter/current.log', maxBytes=200000, backupCount=5)
-handler.setLevel(logging.DEBUG)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.info("Service Startup")
 
 config = configparser.ConfigParser()
 inverter = Inverter("OFF", 0, 0, 0, 0)
 
+def debug_log(message):
+    if get_debug():
+        logger.debug(message)
 
 def get_config():
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
@@ -87,6 +83,13 @@ def get_product_name():
 
 def get_tasmota_ip():
     return config.get("Setup", "TasmotaIp", fallback="127.0.0.1")
+
+def get_debug():
+    val =  config.get("Setup", "debug", fallback=False)
+    if val=="true":
+        return True
+    else:
+        return False
 
 def get_mqtt_address():
     address = config.get('MQTTBroker', 'address', fallback=None)
@@ -131,6 +134,16 @@ def connect_broker(client):
         logger.debug("Retrying...")
         connect_broker(client)
 
+logger = logging.getLogger()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler = RotatingFileHandler('/var/log/dbus-tasmota-inverter/current.log', maxBytes=200000, backupCount=5)
+if get_debug():
+    handler.setLevel(logging.DEBUG)
+else:
+    handler.setLevel(logging.INFO)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.info("Service Startup")
 
 # prepare dict
 topic_category = {}
