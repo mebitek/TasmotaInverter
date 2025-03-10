@@ -14,14 +14,18 @@ The script supports changing the status of the tasmota device from GUI
 
 See config.ini and amend for your own needs.
 
-In [Topics] section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
-in [Warnings] section you can specify the High temperature alarm limit and the overload alarm limit (10% tolerance will be added during calculation)
+In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
 
 Example:
 
     `L1 = tele/tasmota_4B0B98/SENSOR`
 
     `CONFIG = tele/tasmota_4B0B98/STATE`
+In `[Warnings]` section you can specify the High temperature alarm limit and the overload alarm limit (10% tolerance will be added during calculation)
+
+In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
+
+
 
 ### Installation
 
