@@ -17,14 +17,17 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 # our own packages
 import configparser
+import struct
+from os import major
 
 import requests
 
-from vedbus import VeDbusService
+from vedbus import VeDbusService, VeDbusItemImport, VeDbusItemExport
 import paho.mqtt.client as mqtt
 import os
 import json
 import sys
+import dbus
 import time
 import logging
 from logging.handlers import RotatingFileHandler
@@ -54,6 +57,22 @@ class Inverter:
             return 4, 0
 
 
+class VregLinkItem(VeDbusItemExport):
+    def __init__(self, *args, getvreg=None, setvreg=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.getvreg = getvreg
+        self.setvreg = setvreg
+
+    @dbus.service.method('com.victronenergy.VregLink',
+                         in_signature='q', out_signature='qay')
+    def GetVreg(self, regid):
+        return self.getvreg(int(regid))
+
+    @dbus.service.method('com.victronenergy.VregLink',
+                         in_signature='qay', out_signature='qay')
+    def SetVreg(self, regid, data):
+        return self.setvreg(int(regid), bytes(data))
+
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
 
@@ -80,6 +99,9 @@ def get_config():
 
 def get_product_name():
     return config.get('Setup', 'Name', fallback="Tasmota Inverter")
+
+def get_serial():
+    return config.get('Setup', 'Serial', fallback="XXX")
 
 def get_tasmota_ip():
     return config.get("Setup", "TasmotaIp", fallback="127.0.0.1")
@@ -115,6 +137,9 @@ def get_high_temperature_limit():
 def get_overload_limit():
     overload = float(config.get('Warnings', 'Overload', fallback=1500))
     return overload * 0.1 + overload
+
+def get_low_voltage_limit():
+    return config.get('Warnings', 'LowVoltage', fallback=11.8)
 
 def connect_broker(client):
     broker_address = get_mqtt_address()
@@ -220,11 +245,52 @@ def on_message(client, userdata, msg):
         logger.exception("Error in handling of received message payload: " + msg.payload)
         logger.exception(e)
 
-
 class DbusDummyService:
+
+    @staticmethod
+    def generate_product_id(pid_hex):
+        data = [
+            0,
+            pid_hex,
+            0xFE
+        ]
+
+        return struct.pack('>%dH' % (len(data)), *data)
+
+
+    def vreglink_get(self, regid):
+        if regid == 0x0100:
+            return 0x0000, self.generate_product_id(0xA271)
+        elif regid == 0x0102:
+            return 0x0000, [ 0x01, 54, 1, 0 ] #TODO we need a way to calculate
+        elif regid == 0x201:
+            mode, state = inverter.get_mode_and_state()
+            return 0x0000, [state]
+        elif regid == 0x200:
+            mode, state = inverter.get_mode_and_state()
+            return 0x0000, [mode]
+        elif regid == 0xEB03:
+            return 0x0000, [1]
+        elif regid == 0x2200:
+            return 0x0000, [inverter.voltage]
+        elif regid == 0x2201:
+            return 0x0000, [inverter.current]
+        return 0x0000, []
+
+    def vreglink_set(self, regid, data):
+
+        if regid == 0x200:
+            value = int.from_bytes(data, byteorder='little')
+            self.tasmota_http_request(value, "VictronConnect")
+
+        return 0x0000, []
+
     def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT'):
         self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
+
+        vregtype = lambda *args, **kwargs: VregLinkItem(*args, **kwargs,
+                                                        getvreg=self.vreglink_get, setvreg=self.vreglink_set)
 
         logger.debug("%s /DeviceInstance = %d" %
                      (servicename, deviceinstance))
@@ -233,18 +299,27 @@ class DbusDummyService:
 
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
-        self._dbusservice.add_path(
-            '/Mgmt/ProcessVersion', 'Unkown version, and running on Python ' + platform.python_version())
+        self._dbusservice.add_path('/Mgmt/ProcessVersion', '0.2')
         self._dbusservice.add_path('/Mgmt/Connection', connection)
 
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path('/ProductId', 41370)
+        self._dbusservice.add_path('/ProductId', 41713)
         self._dbusservice.add_path('/ProductName', productname)
+        self._dbusservice.add_path('/DeviceName', productname)
         self._dbusservice.add_path('/FirmwareVersion', 0.2)
         self._dbusservice.add_path('/HardwareVersion', 0)
         self._dbusservice.add_path('/Connected', 1)
+        self._dbusservice.add_path('/Serial', get_serial())
+
+        self._dbusservice.add_path('/Devices/0/CustomName', productname)
+        self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
+        self._dbusservice.add_path('/Devices/0/FirmwareVersion', "v1.36")
+        self._dbusservice.add_path('/Devices/0/ProductId', 41713)
+        self._dbusservice.add_path('/Devices/0/ProductName', productname)
+        self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
+        self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
 
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
@@ -254,9 +329,19 @@ class DbusDummyService:
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
+
+        dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
+        battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
+
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
         self._dbusservice['/Ac/Out/L1/P'] = inverter.power
+
+        self._dbusservice["/Ac/L1/Current"] = inverter.current
+        self._dbusservice["/Ac/L1/Power"] = inverter.power
+        self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
+
+        self._dbusservice["/Dc/0/Voltage"] = battery_voltage.get_value()
 
         mode, state = inverter.get_mode_and_state()
         self._dbusservice['/Mode'] = mode
@@ -273,31 +358,39 @@ class DbusDummyService:
         else:
             self._dbusservice['/Alarms/Overload'] = 0
 
+        if float(battery_voltage.get_value()) < float(get_low_voltage_limit()):
+            self._dbusservice['/Alarms/LowVoltage'] = 1
+        else:
+            self._dbusservice['/Alarms/LowVoltage'] = 0
+
+
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
         if index > 255:  # maximum value of the index
             index = 0  # overflow from 255 to 0
         self._dbusservice['/UpdateIndex'] = index
         return True
 
-    @staticmethod
-    def _handlechangedvalue(path, value):
+    def _handlechangedvalue(self, path, value):
         logger.debug("someone else updated %s to %s" % (path, value))
         if path == "/Mode":
-            response = None
-            ip = get_tasmota_ip()
-            if value == 4:
-                response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
-                inverter.status = "OFF"
-            elif value == 2:
-                response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
-                inverter.status = "ON"
-            elif value == 5:
-                response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
-                inverter.status = "ON"
-            if response.status_code == 200:
-                logger.info("Status changed from GUI")
+            self.tasmota_http_request(value, "GUI")
         return True  # accept the change
 
+    @staticmethod
+    def tasmota_http_request(value, source):
+        response = None
+        ip = get_tasmota_ip()
+        if value == 4:
+            response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
+            inverter.status = "OFF"
+        elif value == 2:
+            response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
+            inverter.status = "ON"
+        elif value == 5:
+            response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
+            inverter.status = "ON"
+        if response.status_code == 200:
+            logger.info("Status changed from %s" % source)
 
 def main():
     global config
@@ -326,11 +419,15 @@ def main():
             '/Ac/Out/L1/V': {'initial': 0},
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
+            '/Ac/L1/Voltage': {'initial': 0},
+            '/Ac/L1/Current': {'initial': 0},
+            '/Ac/L1/Power': {'initial': 0},
+            '/Alarms/LowVoltage': {'initial': 0 },
             '/Alarms/HighTemperature': {'initial': 0},
             '/Alarms/Overload': {'initial': 0},
             '/Mode': {'initial': 2},
             '/State': {'initial': 0},
-            '/UpdateIndex': {'initial': 0},
+            '/UpdateIndex': {'initial': 0}
         })
 
     logging.info('Connected to dbus, and switching over to GLib.MainLoop() (= event based)')
