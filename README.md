@@ -32,8 +32,6 @@ Example:
 
    `chmod 755 /data/dbus-tasmota-inverter/kill_me.sh`
 
-   `chmod 755 /data/dbus-tasmota-inverter/rc.local`
-
 3. Get two files from the [velib_python](https://github.com/victronenergy/velib_python) and install them on your venus:
 
    - /data/dbus-tasmota-inverter/vedbus.py
@@ -84,3 +82,4 @@ The daemon-tools will restart the script within a few seconds.
 ### Hardware
 
 Any Tasmota device, which has a Power Sensor.
+Tested with NOUS A8T
