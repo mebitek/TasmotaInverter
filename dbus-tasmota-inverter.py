@@ -17,6 +17,9 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 # our own packages
 import configparser
+
+import requests
+
 from vedbus import VeDbusService
 import paho.mqtt.client as mqtt
 import os
@@ -79,10 +82,11 @@ def get_config():
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config
 
+def get_product_name():
+    return config.get('Setup', 'Name', fallback="Tasmota Inverter")
 
-def get_mqtt_name():
-    return config.get('MQTTBroker', 'name', fallback='MQTT_to_Inverter')
-
+def get_tasmota_ip():
+    return config.get("Setup", "TasmotaIp", fallback="127.0.0.1")
 
 def get_mqtt_address():
     address = config.get('MQTTBroker', 'address', fallback=None)
@@ -92,20 +96,6 @@ def get_mqtt_address():
     else:
         return address
 
-
-def get_high_temperature_limit():
-    return config.get('Warnings', 'HighTemperature', fallback=65)
-
-
-def get_overload_limit():
-    overload = float(config.get('Warnings', 'Overload', fallback=1500))
-    return overload * 0.1 + overload
-
-
-def get_product_name():
-    return config.get('Setup', 'Name', fallback="Tasmota Inverter")
-
-
 def get_mqtt_port():
     port = config.get('MQTTBroker', 'port', fallback=None)
     if port is not None:
@@ -113,6 +103,15 @@ def get_mqtt_port():
     else:
         return 1883
 
+def get_mqtt_name():
+    return config.get('MQTTBroker', 'name', fallback='MQTT_to_Inverter')
+
+def get_high_temperature_limit():
+    return config.get('Warnings', 'HighTemperature', fallback=65)
+
+def get_overload_limit():
+    overload = float(config.get('Warnings', 'Overload', fallback=1500))
+    return overload * 0.1 + overload
 
 def connect_broker(client):
     broker_address = get_mqtt_address()
@@ -246,14 +245,15 @@ class DbusDummyService:
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
         self._dbusservice['/Ac/Out/L1/P'] = inverter.power
 
+        mode, state = inverter.get_mode_and_state()
+        self._dbusservice['/Mode'] = mode
+        self._dbusservice['/State'] = state
+
+        #alarms
         if inverter.temperature > float(get_high_temperature_limit()):
             self._dbusservice['/Alarms/HighTemperature'] = 1
         else:
             self._dbusservice['/Alarms/HighTemperature'] = 0
-
-        mode, state = inverter.get_mode_and_state()
-        self._dbusservice['/Mode'] = mode
-        self._dbusservice['/State'] = state
 
         if inverter.power > get_overload_limit():
             self._dbusservice['/Alarms/Overload'] = 1
@@ -269,6 +269,20 @@ class DbusDummyService:
     @staticmethod
     def _handlechangedvalue(path, value):
         logger.debug("someone else updated %s to %s" % (path, value))
+        if path == "/Mode":
+            response = None
+            ip = get_tasmota_ip()
+            if value == 4:
+                response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
+                inverter.status = "OFF"
+            elif value == 2:
+                response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
+                inverter.status = "ON"
+            elif value == 5:
+                response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
+                inverter.status = "ON"
+            if response.status_code == 200:
+                logger.info("Status changed from GUI")
         return True  # accept the change
 
 
