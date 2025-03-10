@@ -25,28 +25,15 @@ Example:
 
 ### Installation
 
-1. Copy the files to the /data folder on your venus:
-
-   - /data/dbus-tasmota-inverter/dbus-tasmota-inverter.py
-   - /data/dbus-tasmota-inverter/kill_me.sh
-   - /data/dbus-tasmota-inverter/service/run
+1. Copy all the files to the /data/dbus-tasmota-inverter folder on your venus:
 
 2. Set permissions for files:
 
-   `chmod 755 /data/dbus-tasmota-inverter/service/run`
+   `chmod 755 /data/dbus-tasmota-inverter/install.sh`
 
-   `chmod 755 /data/dbus-tasmota-inverter/kill_me.sh`
+3. run `install.sh`
 
-3. Get two files from the [velib_python](https://github.com/victronenergy/velib_python) and install them on your venus:
-
-   - /data/dbus-tasmota-inverter/vedbus.py
-   - /data/dbus-tasmota-inverter/ve_utils.py
-
-4. Add a symlink your service directory :
-
-   `ln -s /data/dbus-tasmota-inverter/service /opt/victronenergy/service/dbus-tasmota-inverter`
-
-   The daemon-tools should automatically start this service within seconds.
+4. (optional) to uninstall just run `uninstall.sh`
 
 ### Debugging
 You can turn debug off on `config.ini` -> `debug=false`
