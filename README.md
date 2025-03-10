@@ -1,15 +1,20 @@
 # venus.dbus-tasmota-inverter
 Service to integrate a tasmota wallplug sensor data as inverter
+The script has been developed with my current RV setup in mind.
+
+**WARNING**: I own an EDECOA 5-151B inverter, and the default settings and service behavior are specific to this particular inverter integrated into an RV.
 
 based on the work of [Waldmensch1](https://github.com/Waldmensch1/venus.dbus-tasmota-inverter)
 
-The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. These will send the values to dbus. The script will check High Temperature and Overload alarms.
+The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. These will send the values to dbus. 
+The script will check High Temperature and Overload alarms.
+The script supports changing the status of the tasmota device from GUI
 
 ### Configuration
 
 See config.ini and amend for your own needs.
 
-In [Topics] section you can specify the L1 phase topic and the status topic
+In [Topics] section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
 in [Warnings] section you can specify the High temperature alarm limit and the overload alarm limit (10% tolerance will be added during calculation)
 
 Example:
@@ -44,6 +49,7 @@ Example:
    The daemon-tools should automatically start this service within seconds.
 
 ### Debugging
+You can turn debug off on `config.ini` -> `debug=false`
 
 The log you find in /var/log/dbus-tasmota-inverter
 
