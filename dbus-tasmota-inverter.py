@@ -44,7 +44,8 @@ class Inverter:
         self.power = power
         self.temperature = temperature
         self.apparent_power = 0
-        self.battery_voltage = 0
+        self.battery_voltage = None
+        self.frequency = 50
 
     def get_mode_and_state(self):
         # /Mode  <- Switch position: 1=Charger only,2=Inverter only;3=On;4=Off;5=Low Power/Eco;
@@ -148,6 +149,9 @@ def get_low_voltage_limit():
 
 def get_low_battery_shutdown():
     return config.get('Options', 'LowBatteryShutdown', fallback=9.30)
+
+def get_topic_option(topic):
+    return config.get('Topics', topic)
 
 def write_to_config(value, path, key):
     config[path][key] = str(value)
@@ -339,7 +343,7 @@ class DbusDummyService:
 
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
-        self._dbusservice.add_path('/Mgmt/ProcessVersion', '0.2')
+        self._dbusservice.add_path('/Mgmt/ProcessVersion', '0.3')
         self._dbusservice.add_path('/Mgmt/Connection', connection)
 
         # Create the mandatory objects
@@ -379,6 +383,7 @@ class DbusDummyService:
         battery_current = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Current')
 
 
+        self._dbusservice['/Ac/Out/L1/F'] = inverter.frequency
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
         self._dbusservice['/Ac/Out/L1/P'] = inverter.power
@@ -407,13 +412,13 @@ class DbusDummyService:
         else:
             self._dbusservice['/Alarms/Overload'] = 0
 
-        if battery_voltage.get_value() is not None:
-            if float(battery_voltage.get_value()) < float(get_low_voltage_limit()):
+        if inverter.battery_voltage is not None:
+            if float(inverter.battery_voltage) < float(get_low_voltage_limit()):
                 self._dbusservice['/Alarms/LowVoltage'] = 1
             else:
                 self._dbusservice['/Alarms/LowVoltage'] = 0
-                
-            if float(battery_voltage.get_value()) < float(get_low_battery_shutdown()):
+
+            if float(inverter.battery_voltage) < float(get_low_battery_shutdown()):
                 self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2")
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
@@ -469,6 +474,7 @@ def main():
             '/Dc/0/Voltage': {'initial': 0},
             '/Dc/0/Current': {'initial': 0},
             '/Ac/Power': {'initial': 0},
+            '/Ac/Out/L1/F': {'initial': 50},
             '/Ac/Out/L1/V': {'initial': 0},
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
@@ -481,6 +487,25 @@ def main():
             '/Alarms/Overload': {'initial': 0},
             '/Mode': {'initial': 2},
             '/State': {'initial': 0},
+
+
+            '/Settings/Tasmota/Setup/TasmotaIp': {'initial': get_tasmota_ip()},
+
+            '/Settings/Tasmota/MQTTBroker/Address': {'initial': get_mqtt_address()},
+            '/Settings/Tasmota/MQTTBroker/Port': {'initial': get_mqtt_port()},
+            '/Settings/Tasmota/MQTTBroker/Name': {'initial': get_mqtt_name()},
+
+            '/Settings/Tasmota/Warnings/HighTemperature': {'initial': get_high_temperature_limit()},
+            '/Settings/Tasmota/Warnings/Overload': {'initial': get_overload_limit()},
+            '/Settings/Tasmota/Warnings/LowVoltage': {'initial': get_low_voltage_limit()},
+
+            '/Settings/Tasmota/Options/LowBatteryShutdown': {'initial': get_low_battery_shutdown()},
+
+            '/Settings/Tasmota/Topics/L1': {'initial': get_topic_option("L1")},
+            '/Settings/Tasmota/Topics/CONFIG': {'initial': get_topic_option("CONFIG")},
+            '/Settings/Tasmota/Topics/LWT': {'initial': get_topic_option("LWT")},
+
+
             '/UpdateIndex': {'initial': 0}
         })
 
