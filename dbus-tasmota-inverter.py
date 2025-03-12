@@ -144,7 +144,15 @@ def get_overload_limit():
     return overload * 0.1 + overload
 
 def get_low_voltage_limit():
-    return config.get('Warnings', 'LowVoltage', fallback=11.8)
+    return config.get('Warnings', 'LowVoltage', fallback=10.8)
+
+def get_low_battery_shutdown():
+    return config.get('Options', 'LowBatteryShutdown', fallback=9.30)
+
+def write_to_config(value, path, key):
+    config[path][key] = str(value)
+    with open("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
+        config.write(configfile)
 
 def connect_broker(client):
     broker_address = get_mqtt_address()
@@ -277,7 +285,8 @@ class DbusDummyService:
         elif regid == 0x2216 or regid==0x2205: #VE_REG_AC_OUTPUT_L1_APPARENT_POWER
             return 0x0000, [inverter.apparent_power]
         elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2
-            return 0x0000, utils.convert_decimal(9.3)
+            low_battery_Shutdown = float(get_low_battery_shutdown())
+            return 0x0000, utils.convert_decimal(low_battery_Shutdown)
         elif regid == 0x0320: #VE_REG_ALARM_LOW_VOLTAGE_SET
             low_voltage_warning = float(get_low_voltage_limit())
             return 0x0000, utils.convert_decimal(low_voltage_warning)
@@ -296,24 +305,24 @@ class DbusDummyService:
         elif regid == 0x034F: #VE_REG_RELAY_MODE
             return 0x0000, [3]
         elif regid == 0x0140: #VE_REG_CAPABILITIES1
-            return 0x0000, utils.create_capabilities_status(True, True, True, True, True)
+            return 0x0000, utils.create_capabilities_status(False, False, False, False, True)
         else:
             return 0x8100, []
 
     def vreglink_set(self, regid, data):
         logger.info(" * * * SET REGID %s" %  hex(regid))
+        global config
+        config = get_config()
         if regid == 0x200: #change state
             value = int.from_bytes(data, byteorder='little')
             self.tasmota_http_request(value, "VictronConnect")
         elif regid == 0x0320: #change low voltage limit - VE_REG_ALARM_LOW_VOLTAGE_SET
-            logger.info(data)
-            global config
-            config = get_config()
             decimal = utils.convert_to_decimal(bytearray(data))
-            config['Warnings']['LowVoltage'] = str(decimal)
-            with open("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
-                config.write(configfile)
-            return 0x0000, data
+            write_to_config(decimal, 'Warnings', 'LowVoltage')
+        elif regid == 0x2210:
+            decimal = utils.convert_to_decimal(bytearray(data))
+            write_to_config(decimal, 'Options', 'LowBatteryShutdown')
+
         return 0x0000, data
 
     def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT'):
