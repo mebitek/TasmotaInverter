@@ -382,7 +382,7 @@ class DbusDummyService:
         self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
-        self._dbusservice["/Dc/0/Current"] = battery_current.get_value()
+        #self._dbusservice["/Dc/0/Current"] = battery_current.get_value() #TODO verify calculation
 
         mode, state = inverter.get_mode_and_state()
         self._dbusservice['/Mode'] = mode
