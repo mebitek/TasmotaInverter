@@ -1,25 +1,5 @@
 import struct
 
-
-def create_alarm_status(low_bat=False, high_bat=False, low_temp=False, high_temp=False, overload=False, poor_dc=False, low_ac=False, high_ac=False):
-    status = 0
-
-    status |= (1 if low_bat else 0) << 0     # Bit 0
-    status |= (1 if high_bat else 0) << 1    # Bit 1
-    status |= (1 if low_temp else 0) << 5    # Bit 5
-    status |= (1 if high_temp else 0) << 6   # Bit 6
-    status |= (1 if overload else 0) << 8    # Bit 8
-    status |= (1 if poor_dc else 0) << 9      # Bit 9
-    status |= (1 if low_ac else 0) << 10      # Bit 10
-    status |= (1 if high_ac else 0) << 11     # Bit 11
-
-    byte_array = [
-        (status & 0xFF),
-        (status >> 8) & 0xFF
-    ]
-
-    return byte_array
-
 def create_capabilities_status(remote=False, relay=False, openpaygo=False, hibernation=False, load=False):
     status = 0
 

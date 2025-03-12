@@ -262,9 +262,6 @@ def on_message(client, userdata, msg):
                     inverter.temperature = float(jsonpayload["ESP32"]["Temperature"])
                     inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
 
-                    inverter.battery_voltage = round(random.uniform(12.5, 14.6),2)
-                    #inverter.battery_voltage = 11.75
-
         else:
             logger.info("Topic not in configurd topics. This shouldn't be happen")
 
@@ -286,8 +283,6 @@ class DbusDummyService:
             return 0x0000, [inverter.current]
         elif regid == 0xED8D: #VE_REG_DC_CHANNEL1_VOLTAGE
             return 0x0000, [inverter.battery_voltage]
-        elif regid == 0x31c: #VE_REG_WARNING_REASON
-            return 0x0000, utils.create_alarm_status()
         elif regid == 0x2216 or regid==0x2205: #VE_REG_AC_OUTPUT_L1_APPARENT_POWER
             return 0x0000, [inverter.apparent_power]
         elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET
@@ -380,9 +375,24 @@ class DbusDummyService:
 
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
         battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
-        #inverter.battery_voltage = battery_voltage.get_value()
-        battery_current = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Current')
+        inverter.battery_voltage = battery_voltage.get_value()
+        #if inverter.battery_voltage == None:
+        #    inverter.battery_voltage = 11.65
 
+        #inverter.battery_voltage = round(random.uniform(11.6, 14.65),2)
+
+        #else:
+        #    if float(inverter.battery_voltage) < 14:
+        #        inverter.battery_voltage = float(inverter.battery_voltage) + 1
+        #    elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
+        #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+        #else:
+        #    if float(inverter.battery_voltage) < 12:
+        #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+            #elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
+            #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+
+        battery_current = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Current')
 
         self._dbusservice['/Ac/Out/L1/F'] = inverter.frequency
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
@@ -394,7 +404,6 @@ class DbusDummyService:
         self._dbusservice["/Ac/L1/Power"] = inverter.power
         self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
 
-        #self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
         self._dbusservice["/Dc/0/Current"] = battery_current.get_value()
 
@@ -420,7 +429,9 @@ class DbusDummyService:
                 self._dbusservice['/Alarms/LowVoltage'] = 0
 
             if float(inverter.battery_voltage) < float(get_low_battery_shutdown()):
-                self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2")
+                self._dbusservice['/Alarms/LowVoltageShutdown'] = 1
+                if inverter.status != 'OFF':
+                    self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET")
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
         if index > 255:  # maximum value of the index
@@ -434,25 +445,35 @@ class DbusDummyService:
             self.tasmota_http_request(value, "GUI")
         return True  # accept the change
 
-    @staticmethod
-    def tasmota_http_request(value, source):
+    def tasmota_http_request(self, value, source):
         response = None
         ip = get_tasmota_ip()
         if value == 4:
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
             inverter.status = "OFF"
         elif value == 2:
-            if float(inverter.battery_voltage) < float(get_low_voltage_limit()):
+            if not self.can_start_due_voltage_limits():
                 return
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
         elif value == 5:
-            if float(inverter.battery_voltage) < float(get_low_voltage_limit()):
+            if not self.can_start_due_voltage_limits():
                 return
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
         if response.status_code == 200:
             logger.info("Status changed from %s" % source)
+
+    def can_start_due_voltage_limits(self):
+        if float(inverter.battery_voltage) < float(get_low_voltage_limit()) and self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 0:
+            logger.info("Cannot turn on the device, low battery restart and alarm has not been reached")
+            return False
+        if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1 and float(inverter.battery_voltage) < float(get_charge_detected()):
+            logger.info("Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage")
+            return False
+        if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1:
+            self._dbusservice['/Alarms/LowVoltageShutdown'] = 0
+        return True
 
 def main():
     global config
@@ -490,6 +511,7 @@ def main():
             '/Alarms/LowVoltage': {'initial': 0 },
             '/Alarms/HighTemperature': {'initial': 0},
             '/Alarms/Overload': {'initial': 0},
+            '/Alarms/LowVoltageShutdown': {'initial': 0},
             '/Mode': {'initial': 2},
             '/State': {'initial': 0},
 
