@@ -18,8 +18,10 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 # our own packages
 import configparser
 import struct
-
+import random
 import requests
+
+import utils
 
 from vedbus import VeDbusService, VeDbusItemImport, VeDbusItemExport
 import paho.mqtt.client as mqtt
@@ -245,6 +247,8 @@ def on_message(client, userdata, msg):
                     inverter.temperature = float(jsonpayload["ESP32"]["Temperature"])
                     inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
 
+                    inverter.battery_voltage = round(random.uniform(12.5, 14.6),2)
+
         else:
             logger.info("Topic not in configurd topics. This shouldn't be happen")
 
@@ -253,137 +257,36 @@ def on_message(client, userdata, msg):
         logger.exception(e)
 
 class DbusDummyService:
-    @staticmethod
-    def generate_product_id(pid_hex):
-        data = [
-            0,
-            pid_hex,
-            0xFE
-        ]
-
-        return struct.pack('>%dH' % (len(data)), *data)
-
-    @staticmethod
-    def create_alarm_status(low_bat=False, high_bat=False, low_temp=False, high_temp=False, overload=False, poor_dc=False, low_ac=False, high_ac=False):
-        status = 0
-
-        status |= (1 if low_bat else 0) << 0     # Bit 0
-        status |= (1 if high_bat else 0) << 1    # Bit 1
-        status |= (1 if low_temp else 0) << 5    # Bit 5
-        status |= (1 if high_temp else 0) << 6   # Bit 6
-        status |= (1 if overload else 0) << 8    # Bit 8
-        status |= (1 if poor_dc else 0) << 9      # Bit 9
-        status |= (1 if low_ac else 0) << 10      # Bit 10
-        status |= (1 if high_ac else 0) << 11     # Bit 11
-
-        byte_array = [
-            (status & 0xFF),
-            (status >> 8) & 0xFF
-        ]
-
-        return byte_array
-
-    @staticmethod
-    def create_capabilities_status(remote=False, relay=False, openpaygo=False, hibernation=False, load=False):
-        status = 0
-
-        status |= (1 if remote else 0) << 8    # Bit 8
-        status |= (1 if relay else 0) << 17      # Bit 17
-        status |= (1 if openpaygo else 0) << 27      # Bit 27
-        status |= (1 if hibernation else 0) << 28     # Bit 28
-        status |= (1 if load else 0) << 29     # Bit 29
-
-        if 0 <= status <= 0xFFFFFFFF:
-            byte_array = struct.pack('<I', status)  # '<I' per little-endian unsigned int
-
-            return list(byte_array)
-
-        return []
-
-    @staticmethod
-    def convert_to_bytearray(value):
-        byte_array = struct.pack('<I', value)
-        return list(byte_array)
-
-    @staticmethod
-    def convert_decimal(decimal_value):
-        int_value = int(decimal_value * 100)  # 930
-        if 0 <= int_value <= 65535:
-            uint16_value = int_value
-            byte_array = struct.pack('<H', uint16_value)  # '<H' per little-endian unsigned short
-            return list(byte_array)
-        return [0]
-
-    @staticmethod
-    def convert_negative(signed_value):
-        if -32768 <= signed_value <= 32767:
-            int16_value = signed_value
-            byte_array = struct.pack('<h', int16_value)  # '<h' per little-endian signed short
-            return list(byte_array)
-        return []
 
     def vreglink_get(self, regid):
-
-        if regid == 0x0100: #VE_REG_PRODUCT_ID
-            return 0x0000, self.generate_product_id(0xA271)
-        if regid == 0x0101: #VE_REG_PRODUCT_REVISION
-            return 0x0000, [0xFF]
-        if regid == 0x0102: #VE_REG_APP_VER
-            return 0x0000, [ 0x01, 54, 1, 0 ] #TODO need to calculate
-        elif regid == 0x0200: #VE_REG_DEVICE_MODE
+        if regid == 0x0200: #VE_REG_DEVICE_MODE
             mode, state = inverter.get_mode_and_state()
             return 0x0000, [mode]
-        elif regid == 0x0201: #VE_REG_DEVICE_STATE
-            mode, state = inverter.get_mode_and_state()
-            return 0x0000, [state]
-        elif regid == 0xEB03: #VE_REG_INV_WAVE_SET50HZ_NOT60HZ
+        if regid == 0xEB03: #VE_REG_INV_WAVE_SET50HZ_NOT60HZ
             return 0x0000, [1]
         elif regid == 0x2200: #VE_REG_AC_OUT_VOLTAGE
-            return 0x0000, [inverter.voltage]
+            return 0x0000, [0xe6]
         elif regid == 0x2201: #VE_REG_AC_OUT_CURRENT
             return 0x0000, [inverter.current]
-        elif regid == 0x010A: #VE_REG_SERIAL_NUMBER
-            return 0x0000, [1]
         elif regid == 0xEB10: #VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS
-            return 0x0000, [10]
+            return 0x0000, utils.convert_decimal(0.08) #
         elif regid == 0xED8D: #VE_REG_DC_CHANNEL1_VOLTAGE
             return 0x0000, [inverter.battery_voltage]
         elif regid == 0x31c: #VE_REG_WARNING_REASON
-            return 0x0000, self.create_alarm_status()
-        elif regid == 0x0092: #VE_REG_CONNECTABLE
-            return 0x0000, [1]
-        elif regid == 0x0090: #VE_REG_BLE_MODE
-            return 0x0000, [1]
-        elif regid == 0xec7f: #VE_REG_BLE_RSSI
-            return 0x0000, self.convert_negative(-28)
+            return 0x0000, utils.create_alarm_status()
         elif regid == 0x2216 or regid==0x2205: #VE_REG_AC_OUTPUT_L1_APPARENT_POWER
-            return 0x0000, self.convert_to_bytearray(inverter.apparent_power)
-        elif regid == 0x2215: #VE_REG_AC_OUTPUT_L1_POWER
-            return 0x0000, self.convert_to_bytearray(inverter.power)
-        elif regid == 0x2213: #VE_REG_AC_OUTPUT_L1_VOLTAGE
-            return 0x0000, [inverter.voltage]
-        elif regid == 0x2214: #VE_REG_AC_OUTPUT_L1_CURRENT
-            return 0x0000, [inverter.current]
-        elif regid == 0x0232: #VE_REG_AC_OUT_VOLTAGE_SETPOINT_MAX
-            return 0x0000, [250]
-        elif regid == 0x0231: #VE_REG_AC_OUT_VOLTAGE_SETPOINT_MIN
-            return 0x0000, [220]
-        elif regid == 0x2212: #VE_REG_VOLTAGE_RANGE_MAX
-            return 0x0000, [15]
-        elif regid == 0x2211: #VE_REG_VOLTAGE_RANGE_MIN
-            return 0x0000, [10]
-        elif regid == 0x31e: #VE_REG_ALARM_REASON
-            return 0x0000, []
+            return 0x0000, [inverter.apparent_power]
         elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2
-            return 0x0000, self.convert_decimal(9.3)
+            return 0x0000, utils.convert_decimal(9.3)
+        elif regid == 0x0320: #VE_REG_ALARM_LOW_VOLTAGE_SET
+            low_voltage_warning = float(get_low_voltage_limit())
+            return 0x0000, utils.convert_decimal(low_voltage_warning)
         elif regid == 0xEBBA: #VE_REG_INV_PROT_UBAT_DYN_CUTOFF_ENABLE
             return 0x0000, [0]
         elif regid == 0xeb04: #VE_REG_INV_OPER_ECO_MODE_INV_MIN
-            return 0x0000, self.convert_decimal(0.06)
+            return 0x0000, utils.convert_decimal(0.06)
         elif regid == 0xeb06: #VE_REG_INV_OPER_ECO_MODE_RETRY_TIME
             return 0x0000, [3]
-        elif regid == 0xEB10: #VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS
-            return 0x0000, self.convert_decimal(0.16)
         elif regid == 0x2207: #VE_REG_AC_LOAD_SENSE_POWER_CLEAR
             return 0x0000, [60]
         elif regid == 0x2206: #VE_REG_AC_LOAD_SENSE_POWER_THRESHOLD
@@ -392,20 +295,26 @@ class DbusDummyService:
             return 0x0000, [0]
         elif regid == 0x034F: #VE_REG_RELAY_MODE
             return 0x0000, [3]
-        elif regid == 0xEB99: #VE_REG_INV_NVM_COMMAND
-            return 0x0000, [0]
         elif regid == 0x0140: #VE_REG_CAPABILITIES1
-            return 0x0000, self.create_capabilities_status(True, True, True, True)
+            return 0x0000, utils.create_capabilities_status(True, True, True, True, True)
         else:
             return 0x8100, []
 
     def vreglink_set(self, regid, data):
-
-        if regid == 0x200: #cahnge state
+        logger.info(" * * * SET REGID %s" %  hex(regid))
+        if regid == 0x200: #change state
             value = int.from_bytes(data, byteorder='little')
             self.tasmota_http_request(value, "VictronConnect")
-
-        return 0x0000, []
+        elif regid == 0x0320: #change low voltage limit - VE_REG_ALARM_LOW_VOLTAGE_SET
+            logger.info(data)
+            global config
+            config = get_config()
+            decimal = utils.convert_to_decimal(bytearray(data))
+            config['Warnings']['LowVoltage'] = str(decimal)
+            with open("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
+                config.write(configfile)
+            return 0x0000, data
+        return 0x0000, data
 
     def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT'):
         self._dbusservice = VeDbusService(servicename, register=False)
@@ -430,14 +339,14 @@ class DbusDummyService:
         self._dbusservice.add_path('/ProductId', 41601)
         self._dbusservice.add_path('/ProductName', productname)
         self._dbusservice.add_path('/DeviceName', productname)
-        self._dbusservice.add_path('/FirmwareVersion', 348)
+        self._dbusservice.add_path('/FirmwareVersion', 0x0136)
         self._dbusservice.add_path('/HardwareVersion', 8)
         self._dbusservice.add_path('/Connected', 1)
         self._dbusservice.add_path('/Serial', get_serial())
 
         self._dbusservice.add_path('/Devices/0/CustomName', productname)
         self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
-        self._dbusservice.add_path('/Devices/0/FirmwareVersion', 300)
+        self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0136)
         self._dbusservice.add_path('/Devices/0/ProductId', 0xA281)
         self._dbusservice.add_path('/Devices/0/ProductName', "Smart Phoenix Inverter 12V 1600VA 230V")
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
@@ -452,21 +361,25 @@ class DbusDummyService:
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
+        global config
+        config = get_config()
 
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
         battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
-        inverter.battery_voltage = battery_voltage.get_value()
+        #inverter.battery_voltage = battery_voltage.get_value()
         battery_current = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Current')
 
 
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
         self._dbusservice['/Ac/Out/L1/P'] = inverter.power
+        self._dbusservice['/Ac/Out/L1/S'] = inverter.apparent_power
 
         self._dbusservice["/Ac/L1/Current"] = inverter.current
         self._dbusservice["/Ac/L1/Power"] = inverter.power
         self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
 
+        #self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
         self._dbusservice["/Dc/0/Current"] = battery_current.get_value()
 
@@ -548,6 +461,7 @@ def main():
             '/Ac/Out/L1/V': {'initial': 0},
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
+            '/Ac/Out/L1/S': {'initial': 0},
             '/Ac/L1/Voltage': {'initial': 0},
             '/Ac/L1/Current': {'initial': 0},
             '/Ac/L1/Power': {'initial': 0},
