@@ -369,8 +369,6 @@ class DbusDummyService:
             #elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
             #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
 
-        battery_current = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Current')
-
         self._dbusservice['/Ac/Out/L1/F'] = inverter.frequency
         self._dbusservice['/Ac/Out/L1/V'] = inverter.voltage
         self._dbusservice['/Ac/Out/L1/I'] = inverter.current
@@ -382,7 +380,9 @@ class DbusDummyService:
         self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
-        #self._dbusservice["/Dc/0/Current"] = battery_current.get_value() #TODO verify calculation
+
+        dc_current = round(float(inverter.power) / float(inverter.battery_voltage), 2)
+        self._dbusservice["/Dc/0/Current"] = -dc_current
 
         mode, state = inverter.get_mode_and_state()
         self._dbusservice['/Mode'] = mode
