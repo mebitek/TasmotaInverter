@@ -1,5 +1,6 @@
 # venus.TasmotaInverter
-Service to integrate a tasmota wallplug sensor data as inverter
+Service to integrate a tasmota wallplug sensor data as inverter.
+
 The script has been developed with my current RV setup in mind.
 
 **WARNING**: I own an EDECOA 5-151B inverter, and the default settings and service behavior are specific to this particular inverter integrated into an RV.
@@ -77,13 +78,6 @@ If the script stops with the message
 
 it means that the service is still running or another service is using that bus name.
 
-#### Restart the script
-
-If you want to restart the script, for example after changing it, just run the following command:
-
-`/data/TasmotaInverter/kill_me.sh`
-
-The daemon-tools will restart the script within a few seconds.
 
 ### Hardware
 
