@@ -95,9 +95,10 @@ logging.basicConfig(
 config = configparser.ConfigParser()
 inverter = Inverter("OFF", 0, 0, 0, 0)
 
-def debug_log(message):
-    if get_debug():
-        logger.debug(message)
+
+def get_version():
+    with open("%s/version" % (os.path.dirname(os.path.realpath(__file__))), 'r') as file:
+        return file.read()
 
 def get_config():
     config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
@@ -339,7 +340,7 @@ class DbusDummyService:
 
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
-        self._dbusservice.add_path('/Mgmt/ProcessVersion', '0.3')
+        self._dbusservice.add_path('/Mgmt/ProcessVersion', get_version())
         self._dbusservice.add_path('/Mgmt/Connection', connection)
 
         # Create the mandatory objects
