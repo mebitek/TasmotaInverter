@@ -1,4 +1,4 @@
-# venus.dbus-tasmota-inverter
+# venus.TasmotaInverter
 Service to integrate a tasmota wallplug sensor data as inverter
 The script has been developed with my current RV setup in mind.
 
@@ -36,50 +36,38 @@ In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when bat
 
 ### Installation
 
-* #### Manual
-  1. Copy all the files to the /data/dbus-tasmota-inverter folder on your venus:
-
-  2. Set permissions for files:
-
-     `chmod 755 /data/dbus-tasmota-inverter/install.sh`
-
-  3. run `install.sh`
-
-  4. (optional) to uninstall just run `uninstall.sh`
-
-
 * #### SetupHelper
   1. install [SetupHelper](https://github.com/kwindrem/SetupHelper)
   2. enter `Package Mager` in Settings
   3. Enter `Inactive Packages`
   4. on `new` enter the following:
-     - `package name` -> `dbus-tasmota-inverter`
+     - `package name` -> `TasmotaInverter`
      - `GitHub user` -> `mebitek`
      - `GitHub branch or tag` -> `master`
-  5. go to `Active packages` and click on `dbus-tasmota-inverter`
+  5. go to `Active packages` and click on `TasmotaInverter`
      - click on `download` -> `proceed`
      - click on `install` -> `proceed`
 
 ### Debugging
 You can turn debug off on `config.ini` -> `debug=false`
 
-The log you find in /var/log/dbus-tasmota-inverter
+The log you find in /var/log/TasmotaInverter
 
 `tail -f -n 200 /data/log/dbus-tasmota-inverter/current.log`
 
 You can check the status of the service with svstat:
 
-`svstat /service/dbus-tasmota-inverter`
+`svstat /service/TasmotaInverter`
 
 It will show something like this:
 
-`/service/dbus-tasmota-inverter: up (pid 10078) 325 seconds`
+`/service/TasmotaInverter: up (pid 10078) 325 seconds`
 
 If the number of seconds is always 0 or 1 or any other small number, it means that the service crashes and gets restarted all the time.
 
 When you think that the script crashes, start it directly from the command line:
 
-`python /data/dbus-tasmota-inverter/dbus-tasmota-inverter.py`
+`python /data/TasmotaInverter/TasmotaInverter.py`
 
 and see if it throws any error messages.
 
@@ -93,7 +81,7 @@ it means that the service is still running or another service is using that bus 
 
 If you want to restart the script, for example after changing it, just run the following command:
 
-`/data/dbus-tasmota-inverter/kill_me.sh`
+`/data/TasmotaInverter/kill_me.sh`
 
 The daemon-tools will restart the script within a few seconds.
 
