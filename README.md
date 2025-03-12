@@ -49,6 +49,8 @@ In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when bat
      - click on `download` -> `proceed`
      - click on `install` -> `proceed`
 
+| velib_pyhton available [here](https://github.com/victronenergy/velib_python/tree/master) 
+
 ### Debugging
 You can turn debug off on `config.ini` -> `debug=false`
 
