@@ -33,7 +33,7 @@ if [ $scriptAction == 'INSTALL' ] ; then
 fi
 
 if [ $scriptAction == 'UNINSTALL' ] ; then
-  ./unistall.sh
+  ./uninstall.sh
 fi
 
 endScript 'INSTALL_FILES'

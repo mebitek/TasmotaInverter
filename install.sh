@@ -12,8 +12,8 @@ else
   ln -s  /data/dbus-tasmota-inverter/service /opt/victronenergy/service/dbus-tasmota-inverter
 fi
 
-wget https://raw.githubusercontent.com/victronenergy/velib_python/refs/heads/master/ve_utils.py
-wget https://raw.githubusercontent.com/victronenergy/velib_python/refs/heads/master/vedbus.py
+wget https://raw.githubusercontent.com/victronenergy/velib_python/refs/heads/master/ve_utils.py > ve_utils.py
+wget https://raw.githubusercontent.com/victronenergy/velib_python/refs/heads/master/vedbus.py > vedbus.py
 
 chmod 755 /data/dbus-tasmota-inverter/dbus-tasmota-inverter.py
 chmod 755 /data/dbus-tasmota-inverter/service/run
