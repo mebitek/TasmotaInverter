@@ -1,43 +1,19 @@
 #!/bin/bash
 
+# setup Shutdown Monitor mechanism
+# Venus OS provides a restart command but not a shutdown command
+# This modificaiton adds a shutdown command to the Device List / Settings / General menu
+#
+#	for RPI only a GPIO pin can also trigger shutdown
+
+# tell CommonResources to:
+#	prompt for install/uninstall
+#	auto install or auto uninstall
+#	then exit
+#	IncludeHelpers will NOT return here !
+
 standardPromptAndActions='yes'
 
 #### following line incorporates helper resources into this script
 source "/data/SetupHelper/HelperResources/IncludeHelpers"
 #### end of lines to include helper resources
-
-####### this is duplicate to code in CommonResources -- keep in case SetupHelepr has not been updated
-# prevent installing if not a Raspberry Pi
-if [ -f /etc/venus/machine ]; then
-    machine=$(cat /etc/venus/machine)
-fi
-if [ -z $machine ]; then
-    if [ -f "$installedFlag" ]; then
-        logMessage "can't determine Venus device type - uninstalling"
-        scriptAction='UNINSTALL'
-    else
-        logMessage "can't determine Venus device type - exiting"
-		exit $INCOMPATIBLE_PLATFORM
-    fi
-elif [ $machine != "raspberrypi2" ] && [ $machine != "raspberrypi4" ]; then
-    if [ -f "$installedFlag" ]; then
-        logMessage "$packageName not compatible with $machine - uninstalling"
-        scriptAction='UNINSTALL'
-    else
-        logMessage "$packageName not compatible with $machine - exiting"
-		exit $INCOMPATIBLE_PLATFORM
-    fi
-fi
-
-#### installing
-if [ $scriptAction == 'INSTALL' ] ; then
-  ./install.sh
-fi
-
-if [ $scriptAction == 'UNINSTALL' ] ; then
-  ./uninstall.sh
-fi
-
-endScript 'INSTALL_FILES'
-
-
