@@ -1,3 +1,3 @@
 #!/bin/sh
 exec 2>&1
-exec /data/TasmotaInverter/TasmotaInverterpy
+exec /data/TasmotaInverter/TasmotaInverter.py
