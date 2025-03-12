@@ -17,8 +17,6 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 # our own packages
 import configparser
-import struct
-import random
 import requests
 
 import utils
@@ -30,7 +28,6 @@ import json
 import sys
 import dbus
 import logging
-from logging.handlers import RotatingFileHandler
 from gi.repository import GLib
 import _thread as thread  # for daemon = True  / Python 3.x
 
@@ -123,7 +120,7 @@ def get_debug():
 def get_mqtt_address():
     address = config.get('MQTTBroker', 'address', fallback=None)
     if address is None:
-        logger.error("No MQTT Broker set in config.ini")
+        logging.error("No MQTT Broker set in config.ini")
         return address
     else:
         return address
@@ -167,29 +164,18 @@ def connect_broker(client):
     broker_port = get_mqtt_port()
 
     try:
-        logger.info('connecting to MQTTBroker ' + broker_address + ' on Port ' + str(broker_port))
+        logging.info('connecting to MQTTBroker ' + broker_address + ' on Port ' + str(broker_port))
 
         if broker_address is not None:
             client.connect(broker_address, port=broker_port)  # connect to broker
             client.loop_start()
         else:
-            logger.error("couldn't connect to MQTT Broker")
+            logging.error("couldn't connect to MQTT Broker")
     except Exception as e:
-        logger.exception("Error in Connect to Broker")
-        logger.exception(e)
-        logger.debug("Retrying...")
+        logging.exception("Error in Connect to Broker")
+        logging.exception(e)
+        logging.debug("Retrying...")
         connect_broker(client)
-
-#logger = logging.getLogger()
-#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-#handler = RotatingFileHandler('/var/log/dbus-tasmota-inverter/current.log', maxBytes=200000, backupCount=5)
-#if get_debug():
-#    handler.setLevel(logging.DEBUG)
-#else:
-#    handler.setLevel(logging.INFO)
-#handler.setFormatter(formatter)
-#logger.addHandler(handler)
-#logger.info("Service Startup")
 
 # prepare dict
 topic_category = {}
@@ -202,10 +188,10 @@ def get_topic(phase):
         for topic in topics:
             t = topic.strip()
             if t not in topic_category:
-                logger.info("Topic added to " + phase + ": " + t)
+                logging.info("Topic added to " + phase + ": " + t)
                 topic_category[t] = phase
             else:
-                logger.info("Cannot add topic " + t + " as it is already added to " + topic_category[t])
+                logging.info("Cannot add topic " + t + " as it is already added to " + topic_category[t])
 
 
 # get topics for all phases
@@ -217,36 +203,36 @@ def get_topics():
 
 # MQTT Abfragen:
 def on_disconnect(client, userdata, rc):
-    logger.info("Client Got Disconnected")
+    logging.info("Client Got Disconnected")
     if rc != 0:
-        logger.info('Unexpected MQTT disconnection. Will auto-reconnect')
+        logging.info('Unexpected MQTT disconnection. Will auto-reconnect')
     else:
-        logger.info('rc value:' + str(rc))
+        logging.info('rc value:' + str(rc))
     try:
-        logger.info("Trying to Reconnect")
+        logging.info("Trying to Reconnect")
         connect_broker(client)
     except Exception as e:
-        logger.exception("Error in Retrying to Connect with Broker")
-        logger.exception(e)
+        logging.exception("Error in Retrying to Connect with Broker")
+        logging.exception(e)
 
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        logger.info("Connected to MQTT Broker!")
+        logging.info("Connected to MQTT Broker!")
         # subscribe to all topics we have in dict
         if len(topic_category) > 0:
             for topic in topic_category.keys():
                 client.subscribe(topic)
-                logger.info("Subscribed to: " + topic)
+                logging.info("Subscribed to: " + topic)
         else:
-            logger.info("No Topic to subscribe, please configure in config.ini")
+            logging.info("No Topic to subscribe, please configure in config.ini")
     else:
-        logger.info("Failed to connect, return code %d\n", rc)
+        logging.info("Failed to connect, return code %d\n", rc)
 
 
 def on_message(client, userdata, msg):
     try:
-        logger.debug('Incoming message from: ' + msg.topic)
+        logging.debug('Incoming message from: ' + msg.topic)
 
         # write the values into dict
         if msg.topic in topic_category:
@@ -264,11 +250,11 @@ def on_message(client, userdata, msg):
                     inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
 
         else:
-            logger.info("Topic not in configurd topics. This shouldn't be happen")
+            logging.debug("Topic not in configurd topics. This shouldn't be happen")
 
     except Exception as e:
-        logger.exception("Error in handling of received message payload: " + msg.payload)
-        logger.exception(e)
+        logging.exception("Error in handling of received message payload: " + msg.payload)
+        logging.exception(e)
 
 class DbusDummyService:
 
@@ -304,11 +290,11 @@ class DbusDummyService:
         elif regid == 0x0140: #VE_REG_CAPABILITIES1
             return 0x0000, utils.create_capabilities_status(False, False, False, False, True)
         else:
-            logger.info("GET REG_ID %s" % regid)
+            logging.debug("GET REG_ID %s" % regid)
             return 0x0000, []
 
     def vreglink_set(self, regid, data):
-        logger.info(" * * * SET REGID %s" %  hex(regid))
+        logging.debug(" * * * SET REGID %s" %  hex(regid))
         global config
         config = get_config()
         if regid == 0x200: #change state
@@ -333,7 +319,7 @@ class DbusDummyService:
         vregtype = lambda *args, **kwargs: VregLinkItem(*args, **kwargs,
                                                         getvreg=self.vreglink_get, setvreg=self.vreglink_set)
 
-        logger.debug("%s /DeviceInstance = %d" %
+        logging.debug("%s /DeviceInstance = %d" %
                      (servicename, deviceinstance))
 
         productname = get_product_name()
@@ -441,7 +427,7 @@ class DbusDummyService:
         return True
 
     def _handlechangedvalue(self, path, value):
-        logger.debug("someone else updated %s to %s" % (path, value))
+        logging.debug("someone else updated %s to %s" % (path, value))
         if path == "/Mode":
             self.tasmota_http_request(value, "GUI")
         return True  # accept the change
@@ -463,14 +449,14 @@ class DbusDummyService:
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
         if response.status_code == 200:
-            logger.info("Status changed from %s" % source)
+            logging.info("Status changed from %s" % source)
 
     def can_start_due_voltage_limits(self):
         if float(inverter.battery_voltage) < float(get_low_voltage_limit()) and self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 0:
-            logger.info("Cannot turn on the device, low battery restart and alarm has not been reached")
+            logging.info("Cannot turn on the device, low battery restart and alarm has not been reached")
             return False
         if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1 and float(inverter.battery_voltage) < float(get_charge_detected()):
-            logger.info("Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage")
+            logging.info("Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage")
             return False
         if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1:
             self._dbusservice['/Alarms/LowVoltageShutdown'] = 0
@@ -485,7 +471,7 @@ def main():
     if get_debug():
         level = logging.DEBUG
     logging.basicConfig(level=level)
-    logger.info("Service Startup")
+    logging.info (">>>>>>>>>>>>>>>> Tasmota Inverter Starting <<<<<<<<<<<<<<<<")
 
     get_topics()
     client = mqtt.Client(get_mqtt_name())  # create new instance
