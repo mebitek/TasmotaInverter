@@ -263,6 +263,7 @@ def on_message(client, userdata, msg):
                     inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
 
                     inverter.battery_voltage = round(random.uniform(12.5, 14.6),2)
+                    #inverter.battery_voltage = 11.75
 
         else:
             logger.info("Topic not in configurd topics. This shouldn't be happen")
@@ -441,9 +442,13 @@ class DbusDummyService:
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
             inverter.status = "OFF"
         elif value == 2:
+            if float(inverter.battery_voltage) < float(get_low_voltage_limit()):
+                return
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
         elif value == 5:
+            if float(inverter.battery_voltage) < float(get_low_voltage_limit()):
+                return
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
         if response.status_code == 200:
