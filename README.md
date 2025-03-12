@@ -53,7 +53,7 @@ You can turn debug off on `config.ini` -> `debug=false`
 
 The log you find in /var/log/TasmotaInverter
 
-`tail -f -n 200 /data/log/dbus-tasmota-inverter/current.log`
+`tail -f -n 200 /data/log/TasmotaInverter/current`
 
 You can check the status of the service with svstat:
 
