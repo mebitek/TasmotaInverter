@@ -79,16 +79,6 @@ class VregLinkItem(VeDbusItemExport):
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
 
-os.makedirs('/var/log/dbus-tasmota-inverter', exist_ok=True)
-logging.basicConfig(
-    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.DEBUG,
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
-
 config = configparser.ConfigParser()
 inverter = Inverter("OFF", 0, 0, 0, 0)
 
