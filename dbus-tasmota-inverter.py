@@ -285,8 +285,8 @@ class DbusDummyService:
         elif regid == 0x2216 or regid==0x2205: #VE_REG_AC_OUTPUT_L1_APPARENT_POWER
             return 0x0000, [inverter.apparent_power]
         elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2
-            low_battery_Shutdown = float(get_low_battery_shutdown())
-            return 0x0000, utils.convert_decimal(low_battery_Shutdown)
+            low_battery_shutdown = float(get_low_battery_shutdown())
+            return 0x0000, utils.convert_decimal(low_battery_shutdown)
         elif regid == 0x0320: #VE_REG_ALARM_LOW_VOLTAGE_SET
             low_voltage_warning = float(get_low_voltage_limit())
             return 0x0000, utils.convert_decimal(low_voltage_warning)
@@ -319,7 +319,7 @@ class DbusDummyService:
         elif regid == 0x0320: #change low voltage limit - VE_REG_ALARM_LOW_VOLTAGE_SET
             decimal = utils.convert_to_decimal(bytearray(data))
             write_to_config(decimal, 'Warnings', 'LowVoltage')
-        elif regid == 0x2210:
+        elif regid == 0x2210: #change low battery shutdown -
             decimal = utils.convert_to_decimal(bytearray(data))
             write_to_config(decimal, 'Options', 'LowBatteryShutdown')
 
@@ -412,7 +412,9 @@ class DbusDummyService:
                 self._dbusservice['/Alarms/LowVoltage'] = 1
             else:
                 self._dbusservice['/Alarms/LowVoltage'] = 0
-
+                
+            if float(battery_voltage.get_value()) < float(get_low_battery_shutdown()):
+                self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2")
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
         if index > 255:  # maximum value of the index
