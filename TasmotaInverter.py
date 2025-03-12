@@ -180,16 +180,16 @@ def connect_broker(client):
         logger.debug("Retrying...")
         connect_broker(client)
 
-logger = logging.getLogger()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler = RotatingFileHandler('/var/log/dbus-tasmota-inverter/current.log', maxBytes=200000, backupCount=5)
-if get_debug():
-    handler.setLevel(logging.DEBUG)
-else:
-    handler.setLevel(logging.INFO)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.info("Service Startup")
+#logger = logging.getLogger()
+#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#handler = RotatingFileHandler('/var/log/dbus-tasmota-inverter/current.log', maxBytes=200000, backupCount=5)
+#if get_debug():
+#    handler.setLevel(logging.DEBUG)
+#else:
+#    handler.setLevel(logging.INFO)
+#handler.setFormatter(formatter)
+#logger.addHandler(handler)
+#logger.info("Service Startup")
 
 # prepare dict
 topic_category = {}
@@ -479,6 +479,13 @@ class DbusDummyService:
 def main():
     global config
     config = get_config()
+
+    # set logging level to include info level entries
+    level = logging.INFO
+    if get_debug():
+        level = logging.DEBUG
+    logging.basicConfig(level=level)
+    logger.info("Service Startup")
 
     get_topics()
     client = mqtt.Client(get_mqtt_name())  # create new instance
