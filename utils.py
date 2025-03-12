@@ -36,10 +36,6 @@ def create_capabilities_status(remote=False, relay=False, openpaygo=False, hiber
 
     return []
 
-def convert_to_bytearray(value):
-    byte_array = struct.pack('<I', value)
-    return list(byte_array)
-
 def convert_decimal(decimal_value):
     int_value = int(decimal_value * 100)  # 930
     if 0 <= int_value <= 65535:
@@ -56,10 +52,3 @@ def convert_to_decimal(byte_array):
     uint16_value = struct.unpack('<H', bytes(byte_array))[0]  # 'H' per unsigned short
     decimal_value = uint16_value / 100.0  # Ritorna il valore decimale originale
     return decimal_value
-
-def convert_negative(signed_value):
-    if -32768 <= signed_value <= 32767:
-        int16_value = signed_value
-        byte_array = struct.pack('<h', int16_value)  # '<h' per little-endian signed short
-        return list(byte_array)
-    return []

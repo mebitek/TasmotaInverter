@@ -300,11 +300,6 @@ class DbusDummyService:
             return 0x0000, utils.convert_decimal(charge_detect)
         elif regid == 0xEBBA: #VE_REG_INV_PROT_UBAT_DYN_CUTOFF_ENABLE
             return 0x0000, [0]
-        elif regid == 0x2211:
-            return 0x0000, [220]
-        elif regid == 0x2212:
-            return 0x0000, [250]
-
         elif regid == 0xEB10: #VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS
             return 0x0000, [0x08] # 0.16s
         elif regid == 0xEB06: #VE_REG_INV_OPER_ECO_MODE_RETRY_TIME
@@ -505,6 +500,7 @@ def main():
             '/Settings/Tasmota/Warnings/LowVoltage': {'initial': get_low_voltage_limit()},
 
             '/Settings/Tasmota/Options/LowBatteryShutdown': {'initial': get_low_battery_shutdown()},
+            '/Settings/Tasmota/Options/ChargeDetected': {'initial': get_charge_detected()},
 
             '/Settings/Tasmota/Topics/L1': {'initial': get_topic_option("L1")},
             '/Settings/Tasmota/Topics/CONFIG': {'initial': get_topic_option("CONFIG")},
