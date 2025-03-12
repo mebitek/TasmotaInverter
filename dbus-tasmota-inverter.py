@@ -150,6 +150,9 @@ def get_low_voltage_limit():
 def get_low_battery_shutdown():
     return config.get('Options', 'LowBatteryShutdown', fallback=9.30)
 
+def get_charge_detected():
+    return config.get('Options', 'ChargeDetected', fallback=14.00)
+
 def get_topic_option(topic):
     return config.get('Topics', topic)
 
@@ -277,41 +280,40 @@ class DbusDummyService:
         if regid == 0xEB03: #VE_REG_INV_WAVE_SET50HZ_NOT60HZ
             return 0x0000, [1]
         elif regid == 0x2200: #VE_REG_AC_OUT_VOLTAGE
-            return 0x0000, [0xe6]
+            return 0x0000, [inverter.voltage]
         elif regid == 0x2201: #VE_REG_AC_OUT_CURRENT
             return 0x0000, [inverter.current]
-        elif regid == 0xEB10: #VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS
-            return 0x0000, utils.convert_decimal(0.08) #
         elif regid == 0xED8D: #VE_REG_DC_CHANNEL1_VOLTAGE
             return 0x0000, [inverter.battery_voltage]
         elif regid == 0x31c: #VE_REG_WARNING_REASON
             return 0x0000, utils.create_alarm_status()
         elif regid == 0x2216 or regid==0x2205: #VE_REG_AC_OUTPUT_L1_APPARENT_POWER
             return 0x0000, [inverter.apparent_power]
-        elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET2
+        elif regid == 0x2210: #VE_REG_SHUTDOWN_LOW_VOLTAGE_SET
             low_battery_shutdown = float(get_low_battery_shutdown())
             return 0x0000, utils.convert_decimal(low_battery_shutdown)
         elif regid == 0x0320: #VE_REG_ALARM_LOW_VOLTAGE_SET
             low_voltage_warning = float(get_low_voltage_limit())
             return 0x0000, utils.convert_decimal(low_voltage_warning)
+        elif regid == 0x0321: #VE_REG_ALARM_LOW_VOLTAGE_CLEAR
+            charge_detect = float(get_charge_detected())
+            return 0x0000, utils.convert_decimal(charge_detect)
         elif regid == 0xEBBA: #VE_REG_INV_PROT_UBAT_DYN_CUTOFF_ENABLE
             return 0x0000, [0]
-        elif regid == 0xeb04: #VE_REG_INV_OPER_ECO_MODE_INV_MIN
-            return 0x0000, utils.convert_decimal(0.06)
-        elif regid == 0xeb06: #VE_REG_INV_OPER_ECO_MODE_RETRY_TIME
-            return 0x0000, [3]
-        elif regid == 0x2207: #VE_REG_AC_LOAD_SENSE_POWER_CLEAR
-            return 0x0000, [60]
-        elif regid == 0x2206: #VE_REG_AC_LOAD_SENSE_POWER_THRESHOLD
-            return 0x0000, [50]
-        elif regid == 0x034E: #VE_REG_RELAY_CONTROL
-            return 0x0000, [0]
-        elif regid == 0x034F: #VE_REG_RELAY_MODE
-            return 0x0000, [3]
+        elif regid == 0x2211:
+            return 0x0000, [220]
+        elif regid == 0x2212:
+            return 0x0000, [250]
+
+        elif regid == 0xEB10: #VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS
+            return 0x0000, [0x08] # 0.16s
+        elif regid == 0xEB06: #VE_REG_INV_OPER_ECO_MODE_RETRY_TIME
+            return 0x0000, [0x0A] # 3s
         elif regid == 0x0140: #VE_REG_CAPABILITIES1
             return 0x0000, utils.create_capabilities_status(False, False, False, False, True)
         else:
-            return 0x8100, []
+            logger.info("GET REG_ID %s" % regid)
+            return 0x0000, []
 
     def vreglink_set(self, regid, data):
         logger.info(" * * * SET REGID %s" %  hex(regid))
@@ -326,6 +328,9 @@ class DbusDummyService:
         elif regid == 0x2210: #change low battery shutdown -
             decimal = utils.convert_to_decimal(bytearray(data))
             write_to_config(decimal, 'Options', 'LowBatteryShutdown')
+        elif regid == 0x0321:
+            decimal = utils.convert_to_decimal(bytearray(data))
+            write_to_config(decimal, 'Options', 'ChargeDetected')
 
         return 0x0000, data
 
