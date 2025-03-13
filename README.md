@@ -7,6 +7,11 @@ The script has been developed with my current RV setup in mind.
 
 based on the work of [Waldmensch1](https://github.com/Waldmensch1/venus.dbus-tasmota-inverter)
 
+### Refrences
+* [VE.Direct-HEX-Protocol-Phoenix-Inverter](https://www.victronenergy.com/upload/documents/VE.Direct-HEX-Protocol-Phoenix-Inverter.pdf)
+* [Venus Wiki](https://github.com/victronenergy/venus/wiki/dbus#inverter)
+* [Reg Info](https://communityarchive.victronenergy.com/storage/attachments/reg-info.pdf)
+
 The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. These will send the values to dbus. 
 The script will check High Temperature, Overload and Low voltage alarms 
 The script supports changing the status of the tasmota device from GUI
@@ -18,24 +23,25 @@ The script supports **Victron Connect App VRM**:
 
 ### Configuration
 
+You need to configure you Tasmota MQQT to point to Venus OS MQTT broker
+
 * #### GUI
     You can configure directly from gui-v1 interface `Settings` -> `Tasmota Inverter`
 
 * #### Manual
-    See config.sample.ini and amend for your own needs. Copy to /data/conf as `tasmota.config.ini` 
+    See config.sample.ini and amend for your own needs. Copy to /data/conf as `tasmota.config.ini`
+    - In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
+    - In `MQTTBroker` configure your MQQT broker, default is the Venus OS MQTT broker (127.0.0.1)
+    - In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
     
-    In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
-    
-    Example:
-    
-        `L1 = tele/tasmota_4B0B98/SENSOR`
-        `CONFIG = tele/tasmota_4B0B98/STATE`
-        `LWT = tele/tasmota_4B0B98/LWT`
-    In `[Warnings]` section you can specify the High temperature alarm limit, the overload alarm limit (10% tolerance will be added during calculation) and the Low Battery Voltage alarm limit
-    
-    In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
-    
-    In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when battery voltage drops under the limit
+      Example:
+
+          `L1 = tele/tasmota_4B0B98/SENSOR`
+          `CONFIG = tele/tasmota_4B0B98/STATE`
+          `LWT = tele/tasmota_4B0B98/LWT`
+
+    - In `[Warnings]` section you can specify the High temperature alarm limit, the overload alarm limit (10% tolerance will be added during calculation) and the Low Battery Voltage alarm limit. All this settings will raise a warning notification
+    - In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when battery voltage drops under the limit and `ChargeDetected` as Tasmnota will not power on after a low battery shutdown event until the charge detected value has not been reached
 
 
 
