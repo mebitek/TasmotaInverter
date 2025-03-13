@@ -1,5 +1,11 @@
+v0.4.0:
+    add gui settings
+
+v0.3.1:
+    fix dc loads
+
 v0.3:
-    add vregs to access, visualize, edit parameters from Victron Conenct App
+    add vregs to access, visualize, edit parameters from Victron Connect App
 
 v0.2:
     initial release

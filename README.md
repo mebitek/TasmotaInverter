@@ -1,4 +1,4 @@
-# venus.TasmotaInverter
+# venus.TasmotaInverter v0.4.0
 Service to integrate a tasmota wallplug sensor data as inverter.
 
 The script has been developed with my current RV setup in mind.
@@ -18,20 +18,24 @@ The script supports **Victron Connect App VRM**:
 
 ### Configuration
 
-See config.ini and amend for your own needs.
+* #### GUI
+    You can configure directly from gui-v1 interface `Settings` -> `Tasmota Inverter`
 
-In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
-
-Example:
-
-    `L1 = tele/tasmota_4B0B98/SENSOR`
-    `CONFIG = tele/tasmota_4B0B98/STATE`
-    `LWT = tele/tasmota_4B0B98/LWT`
-In `[Warnings]` section you can specify the High temperature alarm limit, the overload alarm limit (10% tolerance will be added during calculation) and the Low Battery Voltage alarm limit
-
-In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
-
-In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when battery voltage drops under the limit
+* #### Manual
+    See config.sample.ini and amend for your own needs. Copy to /data/conf as `tasmota.config.ini` 
+    
+    In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
+    
+    Example:
+    
+        `L1 = tele/tasmota_4B0B98/SENSOR`
+        `CONFIG = tele/tasmota_4B0B98/STATE`
+        `LWT = tele/tasmota_4B0B98/LWT`
+    In `[Warnings]` section you can specify the High temperature alarm limit, the overload alarm limit (10% tolerance will be added during calculation) and the Low Battery Voltage alarm limit
+    
+    In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
+    
+    In `[Options]` set `LowBatteryShutdown` to shut down the tasmota device when battery voltage drops under the limit
 
 
 
