@@ -42,7 +42,7 @@ MbPage
 
         MbEditBoxIp {
             description: "Tasmota IP"
-            item.value: ipAddressesItem.value
+            item.value: "ipAddressesItem.value"
             show: tasmotaItem.valid
         }
 
