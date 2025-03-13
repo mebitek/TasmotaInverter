@@ -46,7 +46,6 @@ MbPage
             maximumLength: 20
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Name"
             writeAccessLevel: User.AccessUser
-            show:
         }
 
         MbEditBoxIp {
