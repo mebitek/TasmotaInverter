@@ -1,4 +1,4 @@
-# venus.TasmotaInverter v0.4.0
+# venus.TasmotaInverter v0.4.1
 Service to integrate a tasmota wallplug sensor data as inverter.
 
 The script has been developed with my current RV setup in mind.
