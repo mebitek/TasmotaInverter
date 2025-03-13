@@ -8,6 +8,7 @@ MbPage
 {
 	id: root
 	title: qsTr("Tasmota Inverter")
+    VBusItem { id: tasmotaItem; bind: Utils.path("com.victronenergy.inverter.tasmota", "/Tasmota") }
 
     model: VisibleItemModel
     {
@@ -25,6 +26,7 @@ MbPage
             name: qsTr("TasmotaIp")
             bind: Utils.path("com.victronenergy.settings", "/Settings/Tasmota/Setup/TasmotaIp")
             writeAccessLevel: User.AccessInstaller
+            show: tasmotaItem.valid
         }
     }
 }
