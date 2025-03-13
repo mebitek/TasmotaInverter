@@ -426,6 +426,10 @@ class DbusDummyService:
         logging.debug("someone else updated %s to %s" % (path, value))
         if path == "/Mode":
             self.tasmota_http_request(value, "GUI")
+        if path.startswith("/Settings"):
+            match path:
+                case "/Settings/Tasmota/Setup/Name":
+                    write_to_config(value, "Setup", "Name")
         return True  # accept the change
 
     def tasmota_http_request(self, value, source):
