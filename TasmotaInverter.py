@@ -33,6 +33,8 @@ import logging
 from gi.repository import GLib
 import _thread as thread  # for daemon = True  / Python 3.x
 
+from vreg_link_item import VregLinkItem
+
 
 class Inverter:
     def __init__(self, status, voltage, current, power, temperature):
@@ -62,21 +64,7 @@ class Inverter:
             return 4, 0
 
 
-class VregLinkItem(VeDbusItemExport):
-    def __init__(self, *args, getvreg=None, setvreg=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.getvreg = getvreg
-        self.setvreg = setvreg
 
-    @dbus.service.method('com.victronenergy.VregLink',
-                         in_signature='q', out_signature='qay')
-    def GetVreg(self, regid):
-        return self.getvreg(int(regid))
-
-    @dbus.service.method('com.victronenergy.VregLink',
-                         in_signature='qay', out_signature='qay')
-    def SetVreg(self, regid, data):
-        return self.setvreg(int(regid), bytes(data))
 
 sys.path.insert(1, os.path.join(
     os.path.dirname(__file__), '../ext/velib_python'))
@@ -505,7 +493,6 @@ def main():
     logging.info('Connected to dbus, and switching over to GLib.MainLoop() (= event based)')
     mainloop = GLib.MainLoop()
     mainloop.run()
-
 
 if __name__ == "__main__":
     main()
