@@ -157,6 +157,7 @@ def get_topic_option(topic):
     return config.get('Topics', topic)
 
 def write_to_config(value, path, key):
+    logging.debug("Writing config file %s %s " % (path, key))
     config[path][key] = str(value)
     with open("%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
         config.write(configfile)
@@ -393,7 +394,7 @@ class DbusDummyService:
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
 
-        dc_current = 0 if inverter.battery_voltage == 0 else round(float(inverter.power) / float(inverter.battery_voltage), 2)
+        dc_current = 0 if inverter.battery_voltage == 0 or None else round(float(inverter.power) / float(inverter.battery_voltage), 2)
         self._dbusservice["/Dc/0/Current"] = -dc_current
 
         mode, state = inverter.get_mode_and_state()
