@@ -103,6 +103,9 @@ def get_tasmota_ip():
 def get_inverter_name():
     return config.get("Setup", "Name", fallback="Tasmota Inverter")
 
+def get_inverter_serial():
+    return config.get("Setup", "Serial", fallback="000000")
+
 def get_debug():
     val =  config.get("Setup", "debug", fallback=False)
     if val=="true":
@@ -503,6 +506,7 @@ def main():
             '/State': {'initial': 0},
 
             '/Settings/Tasmota/Setup/Name': {'initial': get_inverter_name()},
+            '/Settings/Tasmota/Setup/Serial': {'initial': get_inverter_name()},
 
             '/Settings/Tasmota/Setup/TasmotaIp': {'initial': get_tasmota_ip()},
 

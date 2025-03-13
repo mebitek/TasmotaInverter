@@ -25,6 +25,15 @@ MbPage
             maximumLength: 20
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/Name"
             writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Serial"
+            maximumLength: 20
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/Serial"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
         }
 
         MbEditBoxIp {
@@ -32,9 +41,27 @@ MbPage
             item.value: "192.168.003.012"
         }
 
+        MbEditBox {
+            description: "MQTT Broker Name"
+            maximumLength: 20
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Name"
+            writeAccessLevel: User.AccessUser
+            show:
+        }
+
         MbEditBoxIp {
-            description: "Broker Address"
+            description: "MQTT Broker Address"
             item.value: "192.168.003.012"
         }
+
+        MbEditBox {
+            description: "MQTT Broker Port"
+            maximumLength: 6
+            numericOnlyLayout: true
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Port"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
     }
 }
