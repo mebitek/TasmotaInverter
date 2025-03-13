@@ -20,8 +20,20 @@ MbPage
             show: !tasmotaItem.valid
         }
 
+        MbEditBox {
+            description: "Inverter Name"
+            maximumLength: 20
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/Name"
+            writeAccessLevel: User.AccessUser
+        }
+
         MbEditBoxIp {
             description: "Tasmota IP"
+            item.value: "192.168.003.012"
+        }
+
+        MbEditBoxIp {
+            description: "Broker Address"
             item.value: "192.168.003.012"
         }
     }
