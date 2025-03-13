@@ -384,7 +384,7 @@ class DbusDummyService:
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
 
-        dc_current = round(float(inverter.power) / float(inverter.battery_voltage), 2)
+        dc_current = round(float(inverter.power) / float(inverter.battery_voltage), 2) if inverter.battery_voltage != 0 else 0
         self._dbusservice["/Dc/0/Current"] = -dc_current
 
         mode, state = inverter.get_mode_and_state()
