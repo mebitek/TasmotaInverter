@@ -11,6 +11,7 @@ MbPage
     VBusItem { id: tasmotaItem; bind: Utils.path("com.victronenergy.inverter.tasmota", "/Connected") }
 
     VBusItem { id: tasmotaItemIp; bind: Utils.path("com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/TasmotaIp") }
+    VBusItem { id: brokerItemIp; bind: Utils.path("com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Address") }
 
     model: VisibleItemModel
     {
@@ -57,7 +58,7 @@ MbPage
 
         MbEditBoxIp {
             description: "MQTT Broker Address"
-            item.value: "192.168.003.012"
+            item.value: brokerItemIp.value
             show: tasmotaItem.valid
         }
 
