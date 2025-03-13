@@ -22,9 +22,9 @@ import shutil
 import requests
 
 import utils
+from tasmota_broker import Broker
 
 from vedbus import VeDbusService, VeDbusItemImport, VeDbusItemExport
-import paho.mqtt.client as mqtt
 import os
 import json
 import sys
@@ -162,24 +162,6 @@ def write_to_config(value, path, key):
     with open("%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
         config.write(configfile)
 
-def connect_broker(client):
-    broker_address = get_mqtt_address()
-    broker_port = get_mqtt_port()
-
-    try:
-        logging.info('connecting to MQTTBroker ' + broker_address + ' on Port ' + str(broker_port))
-
-        if broker_address is not None:
-            client.connect(broker_address, port=broker_port)  # connect to broker
-            client.loop_start()
-        else:
-            logging.error("couldn't connect to MQTT Broker")
-    except Exception as e:
-        logging.exception("Error in Connect to Broker")
-        logging.exception(e)
-        logging.debug("Retrying...")
-        connect_broker(client)
-
 # prepare dict
 topic_category = {}
 
@@ -203,35 +185,7 @@ def get_topics():
     get_topic('CONFIG')
     get_topic('LWT')
 
-
 # MQTT Abfragen:
-def on_disconnect(client, userdata, rc):
-    logging.info("Client Got Disconnected")
-    if rc != 0:
-        logging.info('Unexpected MQTT disconnection. Will auto-reconnect')
-    else:
-        logging.info('rc value:' + str(rc))
-    try:
-        logging.info("Trying to Reconnect")
-        connect_broker(client)
-    except Exception as e:
-        logging.exception("Error in Retrying to Connect with Broker")
-        logging.exception(e)
-
-
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        logging.info("Connected to MQTT Broker!")
-        # subscribe to all topics we have in dict
-        if len(topic_category) > 0:
-            for topic in topic_category.keys():
-                client.subscribe(topic)
-                logging.info("Subscribed to: " + topic)
-        else:
-            logging.info("No Topic to subscribe, please configure in config.ini")
-    else:
-        logging.info("Failed to connect, return code %d\n", rc)
-
 
 def on_message(client, userdata, msg):
     try:
@@ -489,12 +443,11 @@ def main():
     logging.info (">>>>>>>>>>>>>>>> Tasmota Inverter Starting <<<<<<<<<<<<<<<<")
 
     get_topics()
-    client = mqtt.Client(get_mqtt_name())  # create new instance
-    client.on_disconnect = on_disconnect
-    client.on_connect = on_connect
-    client.on_message = on_message
 
-    connect_broker(client)
+    broker = Broker(get_mqtt_name(), get_mqtt_address(), get_mqtt_port())
+    broker.on_message = on_message
+
+    broker.connect_broker()
 
     thread.daemon = True  # allow the program to quit
 
