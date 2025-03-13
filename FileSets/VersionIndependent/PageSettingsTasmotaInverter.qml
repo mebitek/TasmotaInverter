@@ -22,7 +22,7 @@ MbPage
 
         MbItemText
         {
-            id: tasmota-ip
+            id: tasmotaIp
             name: qsTr("TasmotaIp")
             bind: Utils.path("com.victronenergy.settings", "/Settings/Tasmota/Setup/TasmotaIp")
             writeAccessLevel: User.AccessInstaller
