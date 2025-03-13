@@ -436,8 +436,6 @@ class DbusDummyService:
             self.tasmota_http_request(value, "GUI")
         if path.startswith("/Settings"):
             logging.debug("In settings")
-            if value.startsWith("."):
-                value = "0%s" % value
             parts = path.split('/')
             p, k = parts[-2:]
             logging.debug(("p,k %s %s" % (p, k)))
