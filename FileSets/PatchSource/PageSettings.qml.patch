@@ -1,0 +1,16 @@
+--- PageSettings.qml.orig	2025-03-13 06:50:14.606469951 +0100
++++ PageSettings.qml	2025-03-13 06:52:29.745094645 +0100
+@@ -102,6 +102,13 @@
+ 			subpage: Component { PageSettingsFronius {} }
+ 		}
+ 
++//////// added for TasmotaInverter
++        MbSubMenu
++        {
++            description: qsTr("Tasmota Inverter")
++            subpage: Component { PageSettingsTasmotaInverter {} }
++        }
++
+ 		MbSubMenu {
+ 			description: qsTr("Modbus TCP/UDP devices")
+ 			subpage: Component { PageSettingsModbus {} }
