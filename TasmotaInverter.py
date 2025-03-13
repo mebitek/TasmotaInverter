@@ -155,9 +155,9 @@ topic_category = {}
 
 # get topics for a single phase
 def get_topic(phase):
-    strtopics = config.get('Topics', phase, fallback='')
-    if strtopics != '':
-        topics = strtopics.split(',')
+    str_topics = config.get('Topics', phase, fallback='')
+    if str_topics != '':
+        topics = str_topics.split(',')
         for topic in topics:
             t = topic.strip()
             if t not in topic_category:
@@ -166,15 +166,12 @@ def get_topic(phase):
             else:
                 logging.info("Cannot add topic " + t + " as it is already added to " + topic_category[t])
 
-
-# get topics for all phases
 def get_topics():
-    get_topic('L1')
-    get_topic('CONFIG')
-    get_topic('LWT')
+    topic_category['L1'] = get_topic_option('L1')
+    topic_category['CONFIG'] = get_topic_option('CONFIG')
+    topic_category['LWT'] = get_topic_option('LWT')
 
-# MQTT Abfragen:
-
+# MQTT On message
 def on_message(client, userdata, msg):
     try:
         logging.debug('Incoming message from: ' + msg.topic)
@@ -379,13 +376,11 @@ class TasmotaInverterService:
         if path == "/Mode":
             self.tasmota_http_request(value, "GUI")
         if path.startswith("/Settings"):
-            logging.debug("In settings")
             value_str = str(value)
             if value_str.startswith("."):
                 value_str = "0%s" % value_str
             parts = path.split('/')
             p, k = parts[-2:]
-            logging.debug(("p,k %s %s" % (p, k)))
             write_to_config(value_str, p, k)
         return True  # accept the change
 
