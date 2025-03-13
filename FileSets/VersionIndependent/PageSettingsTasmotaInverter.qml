@@ -10,6 +10,9 @@ MbPage
 	title: qsTr("Tasmota Inverter")
     VBusItem { id: tasmotaItem; bind: Utils.path("com.victronenergy.inverter.tasmota", "/Connected") }
 
+    property VBusItem ipAddressesItem: VBusItem { bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/TasmotaIp" }
+    model: Utils.stringToIpArray(ipAddressesItem.value)
+
     model: VisibleItemModel
     {
         // Setup
@@ -39,7 +42,7 @@ MbPage
 
         MbEditBoxIp {
             description: "Tasmota IP"
-            item.value: "192.168.003.012"
+            item.value: model
             show: tasmotaItem.valid
         }
 
