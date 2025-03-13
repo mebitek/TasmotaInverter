@@ -441,7 +441,7 @@ class DbusDummyService:
             value_str = str(value)
             if value_str.startswith("."):
                 value_str = "0%s" % value_str
-                self._dbusservice[path] = value_str
+                self._dbusservice.__setitem__(path, value_str)
             parts = path.split('/')
             p, k = parts[-2:]
             logging.debug(("p,k %s %s" % (p, k)))
