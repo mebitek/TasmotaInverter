@@ -42,15 +42,8 @@ MbPage
 
         MbEditBoxIp {
             description: "Tasmota IP"
-            item.value: modelData
+            item.value: ipAddressesItem.value
             show: tasmotaItem.valid
-        }
-
-        delegate: Component {
-            MbItemValue {
-                description: "Tasmota IP"
-                item.value: modelData
-            }
         }
 
         // Broker
