@@ -12,6 +12,12 @@ MbPage
 
     model: VisibleItemModel
     {
-        
+        MbItemText
+        {
+            text: qsTr("Tasmota Inverter not running")
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignLeft
+            show: !tasmotaItem.valid
+        }
     }
 }
