@@ -393,8 +393,12 @@ class DbusDummyService:
         self._dbusservice["/Ac/L1/Voltage"] = inverter.voltage
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
+        logging.debug("* * * %s" % inverter.battery_voltage)
+        if inverter.battery_voltage == 0 or None:
+            dc_current = 0
+        else:
+            dc_current = round(float(inverter.power) / float(inverter.battery_voltage), 2)
 
-        dc_current = 0 if inverter.battery_voltage == 0 or None else round(float(inverter.power) / float(inverter.battery_voltage), 2)
         self._dbusservice["/Dc/0/Current"] = -dc_current
 
         mode, state = inverter.get_mode_and_state()
