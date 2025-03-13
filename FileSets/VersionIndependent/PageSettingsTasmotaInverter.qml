@@ -41,7 +41,7 @@ MbPage
 
         MbEditBoxIp {
             description: "Tasmota IP"
-            item.value: "192.168.003.012"
+            item.value: tasmotaItemIp.value
             show: tasmotaItem.valid
         }
 
