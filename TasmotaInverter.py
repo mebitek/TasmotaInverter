@@ -91,11 +91,11 @@ def get_version():
 
 def get_config():
 
-    config_file = "%s/../config.ini" % (os.path.dirname(os.path.realpath(__file__)))
+    config_file = "%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__)))
     if not os.path.exists(config_file):
         sample_config_file = "%s/config.sample.ini" % (os.path.dirname(os.path.realpath(__file__)))
         shutil.copy(sample_config_file, config_file)
-    config.read("%s/../config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+    config.read("%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config
 
 def get_product_name():
