@@ -167,9 +167,9 @@ def get_topic(phase):
                 logging.info("Cannot add topic " + t + " as it is already added to " + topic_category[t])
 
 def get_topics():
-    topic_category['L1'] = get_topic_option('L1')
-    topic_category['CONFIG'] = get_topic_option('CONFIG')
-    topic_category['LWT'] = get_topic_option('LWT')
+    topic_category[get_topic_option('L1')] = 'L1'
+    topic_category[get_topic_option('CONFIG')] = 'CONFIG'
+    topic_category[get_topic_option('LWT')] = 'LWT'
 
 # MQTT On message
 def on_message(client, userdata, msg):
