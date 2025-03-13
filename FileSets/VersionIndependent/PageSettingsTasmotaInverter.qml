@@ -71,7 +71,7 @@ MbPage
         MbEditBox {
             description: "Topic L1"
             maximumLength: 50
-            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/L1"
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Topics/L1"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
         }
@@ -79,7 +79,7 @@ MbPage
         MbEditBox {
             description: "Topic CONFIG"
             maximumLength: 50
-            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/CONFIG"
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Topics/CONFIG"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
         }
@@ -87,7 +87,7 @@ MbPage
         MbEditBox {
             description: "Topic LWT"
             maximumLength: 50
-            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/LWT"
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Topics/LWT"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
         }
@@ -114,9 +114,27 @@ MbPage
 
         MbEditBox {
             description: "Low Voltage Warning"
-            maximumLength: 3
+            maximumLength: 5
             matchString: "0123456789."
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Warnings/LowVoltage"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Low Battery Shutdown"
+            maximumLength: 5
+            matchString: "0123456789."
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Options/LowBatteryShutdown"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Charge Detected"
+            maximumLength: 5
+            matchString: "0123456789."
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Options/ChargeDetected"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
         }
