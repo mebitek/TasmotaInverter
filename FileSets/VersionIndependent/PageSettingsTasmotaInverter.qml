@@ -20,9 +20,9 @@ MbPage
             show: !tasmotaItem.valid
         }
 
-        MbItemValue {
-            description: qsTr("Tasmota IP")
-            item.bind: Utils.path("com.victronenergy.inverter.tasmota", "/Settings/Tasmota/Setup/TasmotaIp") 
+        MbEditBoxIp {
+            description: "Tasmota IP"
+            item.value: "192.168.003.012"
         }
     }
 }
