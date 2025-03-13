@@ -434,29 +434,31 @@ class DbusDummyService:
         if path == "/Mode":
             self.tasmota_http_request(value, "GUI")
         if path.startswith("/Settings"):
+            if value.startsWith("."):
+                value = "0%s" % value
             parts = path.split('/')
             p, k = parts[-2:]
             write_to_config(value, p, k)
         return True  # accept the change
 
     def tasmota_http_request(self, value, source):
-        response = None
         ip = get_tasmota_ip()
         if value == 4:
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
             inverter.status = "OFF"
-        elif value == 2:
+        elif value == 2 or value == 5:  # Ensure we handle both values correctly
             if not self.can_start_due_voltage_limits():
                 return
             response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
             inverter.status = "ON"
-        elif value == 5:
-            if not self.can_start_due_voltage_limits():
-                return
-            response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
-            inverter.status = "ON"
+
+        if response is None:
+            logging.warning("Failed to send HTTP request.")
+            return
+
+        # Update the status only if the request was successful
         if response.status_code == 200:
-            logging.info("Status changed from %s" % source)
+            logging.info(f"Status changed from {source}")
 
     def can_start_due_voltage_limits(self):
         if float(inverter.battery_voltage) < float(get_low_voltage_limit()) and self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 0:
