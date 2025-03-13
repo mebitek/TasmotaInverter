@@ -445,6 +445,7 @@ def main():
     get_topics()
 
     broker = Broker(get_mqtt_name(), get_mqtt_address(), get_mqtt_port())
+    broker.topic_category = topic_category
     broker.on_message = on_message
 
     broker.connect_broker()
