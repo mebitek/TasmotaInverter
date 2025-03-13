@@ -349,7 +349,7 @@ class DbusDummyService:
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
-        self._dbusservice['Tasmota'] = 1
+        self._dbusservice['/Tasmota'] = 1
         global config
         config = get_config()
 
