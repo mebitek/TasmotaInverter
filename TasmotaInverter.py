@@ -17,6 +17,8 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 # our own packages
 import configparser
+import shutil
+
 import requests
 
 import utils
@@ -88,7 +90,12 @@ def get_version():
         return file.read()
 
 def get_config():
-    config.read("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))))
+
+    config_file = "%s/../config.ini" % (os.path.dirname(os.path.realpath(__file__)))
+    if not os.path.exists(config_file):
+        sample_config_file = "%s/config.smple.ini" % (os.path.dirname(os.path.realpath(__file__)))
+        shutil.copy(sample_config_file, config_file)
+    config.read("%s/../config.ini" % (os.path.dirname(os.path.realpath(__file__))))
     return config
 
 def get_product_name():
