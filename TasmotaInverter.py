@@ -213,7 +213,7 @@ def on_message(client, userdata, msg):
         logging.exception("Error in handling of received message payload: " + msg.payload)
         logging.exception(e)
 
-class DbusDummyService:
+class TasmotaInverterService:
 
     def vreglink_get(self, regid):
         if regid == 0x0200: #VE_REG_DEVICE_MODE
@@ -456,7 +456,7 @@ def main():
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
 
-    pvac_output = DbusDummyService(
+    pvac_output = TasmotaInverterService(
         servicename='com.victronenergy.inverter.tasmota',
         deviceinstance=295,
         paths={
