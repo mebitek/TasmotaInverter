@@ -10,8 +10,7 @@ MbPage
 	title: qsTr("Tasmota Inverter")
     VBusItem { id: tasmotaItem; bind: Utils.path("com.victronenergy.inverter.tasmota", "/Connected") }
 
-    property VBusItem ipAddressesItem: VBusItem { bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/TasmotaIp" }
-    model: Utils.stringToIpArray(ipAddressesItem.value)
+    VBusItem { id: tasmotaItemIp; bind: Utils.path("com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/TasmotaIp") }
 
     model: VisibleItemModel
     {
