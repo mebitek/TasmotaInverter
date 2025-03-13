@@ -158,7 +158,7 @@ def get_topic_option(topic):
 
 def write_to_config(value, path, key):
     config[path][key] = str(value)
-    with open("%s/config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
+    with open("%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
         config.write(configfile)
 
 def connect_broker(client):
