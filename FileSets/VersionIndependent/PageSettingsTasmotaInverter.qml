@@ -20,14 +20,9 @@ MbPage
             show: !tasmotaItem.valid
         }
 
-        MbItemText
-        {
-            property VBusItem tasmotaIp: VBusItem { bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/TasmotaIp" }
-            id: tasmotaIpValue
-            name: qsTr("TasmotaIp")
-            show: tasmotaIp.value
-            writeAccessLevel: User.AccessInstaller
-            show: tasmotaItem.valid
+        MbItemValue {
+            description: qsTr("Tasmota IP")
+            item.bind: Utils.path("com.victronenergy.inverter.tasmota", "/Settings/Tasmota/Setup/TasmotaIp") 
         }
     }
 }
