@@ -135,8 +135,7 @@ def get_high_temperature_limit():
     return config.get('Warnings', 'HighTemperature', fallback=65)
 
 def get_overload_limit():
-    overload = float(config.get('Warnings', 'Overload', fallback=1500))
-    return overload * 0.1 + overload
+    return float(config.get('Warnings', 'Overload', fallback=1500))
 
 def get_low_voltage_limit():
     return config.get('Warnings', 'LowVoltage', fallback=10.8)
@@ -387,7 +386,7 @@ class DbusDummyService:
 
         self._dbusservice["/Dc/0/Voltage"] = inverter.battery_voltage
 
-        dc_current = round(float(inverter.power) / float(inverter.battery_voltage), 2) if inverter.battery_voltage != 0 else 0
+        dc_current = 0 if inverter.battery_voltage == 0 else round(float(inverter.power) / float(inverter.battery_voltage), 2)
         self._dbusservice["/Dc/0/Current"] = -dc_current
 
         mode, state = inverter.get_mode_and_state()
@@ -400,7 +399,8 @@ class DbusDummyService:
         else:
             self._dbusservice['/Alarms/HighTemperature'] = 0
 
-        if inverter.power > get_overload_limit():
+        overload = get_overload_limit() * 0.1 + get_overload_limit()
+        if inverter.power > overload:
             self._dbusservice['/Alarms/Overload'] = 1
         else:
             self._dbusservice['/Alarms/Overload'] = 0
