@@ -12,6 +12,7 @@ MbPage
 
     model: VisibleItemModel
     {
+        // Setup
         MbItemText
         {
             text: qsTr("Tasmota Inverter not running")
@@ -39,18 +40,23 @@ MbPage
         MbEditBoxIp {
             description: "Tasmota IP"
             item.value: "192.168.003.012"
+            show: tasmotaItem.valid
         }
+
+        // Broker
 
         MbEditBox {
             description: "MQTT Broker Name"
             maximumLength: 20
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Name"
             writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
         }
 
         MbEditBoxIp {
             description: "MQTT Broker Address"
             item.value: "192.168.003.012"
+            show: tasmotaItem.valid
         }
 
         MbEditBox {
@@ -61,6 +67,60 @@ MbPage
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
         }
+
+        MbEditBox {
+            description: "Topic L1"
+            maximumLength: 50
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/L1"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Topic CONFIG"
+            maximumLength: 50
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/CONFIG"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Topic LWT"
+            maximumLength: 50
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/LWT"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        // Options
+
+        MbEditBox {
+            description: "High Temp Warning"
+            maximumLength: 3
+            numericOnlyLayout: true
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Warnings/HighTemperature"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Overload Warning"
+            maximumLength: 5
+            numericOnlyLayout: true
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Warnings/Overload"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
+        MbEditBox {
+            description: "Low Voltage Warning"
+            maximumLength: 3
+            matchString: "0123456789."
+            item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Warnings/LowVoltage"
+            writeAccessLevel: User.AccessUser
+            show: tasmotaItem.valid
+        }
+
 
     }
 }

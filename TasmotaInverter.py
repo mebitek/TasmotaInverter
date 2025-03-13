@@ -506,7 +506,7 @@ def main():
             '/State': {'initial': 0},
 
             '/Settings/Tasmota/Setup/Name': {'initial': get_inverter_name()},
-            '/Settings/Tasmota/Setup/Serial': {'initial': get_inverter_name()},
+            '/Settings/Tasmota/Setup/Serial': {'initial': get_inverter_serial()},
 
             '/Settings/Tasmota/Setup/TasmotaIp': {'initial': get_tasmota_ip()},
 
