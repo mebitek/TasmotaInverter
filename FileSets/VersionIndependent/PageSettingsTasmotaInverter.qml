@@ -26,7 +26,7 @@ MbPage
 
         MbEditBox {
             description: "Inverter Name"
-            maximumLength: 20
+            maximumLength: 30
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/Name"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
@@ -34,7 +34,7 @@ MbPage
 
         MbEditBox {
             description: "Serial"
-            maximumLength: 20
+            maximumLength: 30
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/Setup/Serial"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
@@ -50,7 +50,7 @@ MbPage
 
         MbEditBox {
             description: "MQTT Broker Name"
-            maximumLength: 20
+            maximumLength: 30
             item.bind: "com.victronenergy.inverter.tasmota/Settings/Tasmota/MQTTBroker/Name"
             writeAccessLevel: User.AccessUser
             show: tasmotaItem.valid
