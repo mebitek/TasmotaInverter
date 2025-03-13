@@ -339,6 +339,8 @@ class DbusDummyService:
         self._dbusservice.add_path('/Devices/0/Serial', get_serial())
         self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
 
+        self.DbusService.add_path ('/Tasmota', 0, writeable = True)
+
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
                 path, settings['initial'], writeable=True, onchangecallback=self._handlechangedvalue)
@@ -347,6 +349,7 @@ class DbusDummyService:
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
+        self._dbusservice['Tasmota'] = 1
         global config
         config = get_config()
 
