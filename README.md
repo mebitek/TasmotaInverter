@@ -13,8 +13,11 @@ based on the work of [Waldmensch1](https://github.com/Waldmensch1/venus.dbus-tas
 * [Reg Info](https://communityarchive.victronenergy.com/storage/attachments/reg-info.pdf)
 
 The Python script subscribes to a MQTT Broker and parses the typical Tasmota Sensor telegrams. These will send the values to dbus. 
+
 The script will check High Temperature, Overload and Low voltage alarms 
+
 The script supports changing the status of the tasmota device from GUI
+
 The script supports **Victron Connect App VRM**:
    * visualization as Smart Phoenix Inverter 12V 1600VA 230V
    * change mode (On, Off, Eco)
