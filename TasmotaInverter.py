@@ -285,35 +285,35 @@ class TasmotaInverterService:
 
     # Vreg methods get/set
     def vreglink_get(self, regid):
-        if regid == InverterReg.VE_REG_DEVICE_MODE:
+        if regid == InverterReg.VE_REG_DEVICE_MODE.value:
             mode, state = self.inverter.get_mode_and_state()
             return GenericReg.OK, [mode]
-        if regid == InverterReg.VE_REG_INV_WAVE_SET50HZ_NOT60HZ:
+        if regid == InverterReg.VE_REG_INV_WAVE_SET50HZ_NOT60HZ.value:
             return GenericReg.OK, [1]  # 50Hz
-        elif regid == InverterReg.VE_REG_AC_OUT_VOLTAGE:
+        elif regid == InverterReg.VE_REG_AC_OUT_VOLTAGE.value:
             return GenericReg.OK, [self.inverter.voltage]
-        elif regid == InverterReg.VE_REG_AC_OUT_CURRENT:
+        elif regid == InverterReg.VE_REG_AC_OUT_CURRENT.value:
             return GenericReg.OK, [self.inverter.current]
-        elif regid == InverterReg.VE_REG_DC_CHANNEL1_VOLTAGE:
+        elif regid == InverterReg.VE_REG_DC_CHANNEL1_VOLTAGE.value:
             return GenericReg.OK, [self.inverter.battery_voltage]
-        elif regid == InverterReg.VE_REG_AC_OUTPUT_L1_APPARENT_POWER or regid == InverterReg.VE_REG_AC_OUT_APPARENT_POWER:
+        elif regid == InverterReg.VE_REG_AC_OUTPUT_L1_APPARENT_POWER.value or regid == InverterReg.VE_REG_AC_OUT_APPARENT_POWER.value:
             return GenericReg.OK, [self.inverter.apparent_power]
-        elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET:
+        elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET.value:
             low_battery_shutdown = float(self.config.get_low_battery_shutdown())
             return GenericReg.OK, utils.convert_decimal(low_battery_shutdown)
-        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_SET:
+        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_SET.value:
             low_voltage_warning = float(self.config.get_low_voltage_limit())
             return GenericReg.OK, utils.convert_decimal(low_voltage_warning)
-        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_CLEAR:
+        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_CLEAR.value:
             charge_detect = float(self.config.get_charge_detected())
             return GenericReg.OK, utils.convert_decimal(charge_detect)
-        elif regid == InverterReg.VE_REG_INV_PROT_UBAT_DYN_CUTOFF_ENABLE:
+        elif regid == InverterReg.VE_REG_INV_PROT_UBAT_DYN_CUTOFF_ENABLE.value:
             return GenericReg.OK, [0]
-        elif regid == InverterReg.VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS:
+        elif regid == InverterReg.VE_REG_INV_OPER_ECO_LOAD_DETECT_PERIODS.value:
             return GenericReg.OK, [0x08]  # 0.16s
-        elif regid == InverterReg.VE_REG_INV_OPER_ECO_MODE_RETRY_TIME:
+        elif regid == InverterReg.VE_REG_INV_OPER_ECO_MODE_RETRY_TIME.value:
             return GenericReg.OK, [0x0A]  # 3s
-        elif regid == InverterReg.VE_REG_CAPABILITIES1:
+        elif regid == InverterReg.VE_REG_CAPABILITIES1.value:
             return GenericReg.OK, utils.create_capabilities_status(False, False, False, False, True)
         else:
             logging.debug("GET REG_ID %s" % regid)
@@ -321,16 +321,16 @@ class TasmotaInverterService:
 
     def vreglink_set(self, regid, data):
         logging.debug(" * * * SET REGID %s" % hex(regid))
-        if regid == InverterReg.VE_REG_DEVICE_MODE:  # change state
+        if regid == InverterReg.VE_REG_DEVICE_MODE.value:  # change state
             value = int.from_bytes(data, byteorder='little')
             self.tasmota_http_request(value, "VictronConnect")
-        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_SET:
+        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_SET.value:
             decimal = utils.convert_to_decimal(bytearray(data))
             self.config.write_to_config(decimal, 'Warnings', 'LowVoltage')
-        elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET:  # change low battery shutdown -
+        elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET.value:  # change low battery shutdown -
             decimal = utils.convert_to_decimal(bytearray(data))
             self.config.write_to_config(decimal, 'Options', 'LowBatteryShutdown')
-        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_CLEAR:
+        elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_CLEAR.value:
             decimal = utils.convert_to_decimal(bytearray(data))
             self.config.write_to_config(decimal, 'Options', 'ChargeDetected')
 
