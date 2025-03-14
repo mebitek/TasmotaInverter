@@ -27,7 +27,7 @@ import _thread as thread
 # add the path to our own packages for import
 sys.path.insert(1, "/data/SetupHelper/velib_python")
 
-from vedbus import VeDbusService, VeDbusItemImport, VeDbusItemExport
+from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
 
 from tasmota_broker import Broker
