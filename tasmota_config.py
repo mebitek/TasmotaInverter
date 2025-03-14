@@ -76,3 +76,8 @@ class TasmotaConfig:
         self.config[path][key] = str(value)
         with open("%s/../conf/tasmota_config.ini" % (os.path.dirname(os.path.realpath(__file__))), 'w') as configfile:
             self.config.write(configfile)
+
+    @staticmethod
+    def get_version():
+        with open("%s/version" % (os.path.dirname(os.path.realpath(__file__))), 'r') as file:
+            return file.read()
