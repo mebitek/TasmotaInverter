@@ -9,32 +9,29 @@ Inspired by:
  - https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py (Template)
 
 
-This code and its documentation can be found on: https://github.com/Waldmensch1/venus.dbus-tasmota-inverter
+This code and its documentation can be found on: https://github.com/mebitek/TasmotaInverter
 Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
 Reading information from Tasmota SENSOR MQTT and puts the info on dbus as inverter.
 
 """
 
-# our own packages
-import configparser
-import shutil
-
-import requests
-
 import utils
-import vreg_link_item
-from tasmota_broker import Broker
-from tasmota_config import TasmotaConfig
+import os
+import sys
+import json
+import logging
+import dbus
+import requests
+import _thread as thread
+
+# add the path to our own packages for import
+sys.path.insert(1, "/data/SetupHelper/velib_python")
 
 from vedbus import VeDbusService, VeDbusItemImport, VeDbusItemExport
-import os
-import json
-import sys
-import dbus
-import logging
 from gi.repository import GLib
-import _thread as thread  # for daemon = True  / Python 3.x
 
+from tasmota_broker import Broker
+from tasmota_config import TasmotaConfig
 from vreg_link_item import VregLinkItem, InverterReg, GenericReg
 
 
@@ -64,10 +61,6 @@ class Inverter:
                 return 5, 1
         else:
             return 4, 0
-
-
-sys.path.insert(1, os.path.join(
-    os.path.dirname(__file__), '../ext/velib_python'))
 
 
 class TasmotaInverterService:
@@ -265,12 +258,12 @@ class TasmotaInverterService:
     def can_start_due_voltage_limits(self):
         if float(self.inverter.battery_voltage) < float(
                 self.config.get_low_voltage_limit()) and self._dbusservice.__getitem__(
-                '/Alarms/LowVoltageShutdown') == 0:
+            '/Alarms/LowVoltageShutdown') == 0:
             logging.info("Cannot turn on the device, low battery restart and alarm has not been reached")
             return False
         if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1 and float(
                 self.inverter.battery_voltage) < float(
-                self.config.get_charge_detected()):
+            self.config.get_charge_detected()):
             logging.info(
                 "Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage")
             return False
