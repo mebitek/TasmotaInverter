@@ -32,10 +32,10 @@ You need to configure you Tasmota MQQT to point to Venus OS MQTT broker
     You can configure directly from gui-v1 interface `Settings` -> `Tasmota Inverter`
 
 * #### Manual
-    See config.sample.ini and amend for your own needs. Copy to /data/conf as `tasmota.config.ini`
+    See config.sample.ini and amend for your own needs. Copy to `/data/conf` as `tasmota.config.ini`
     - In `[Setup]` set `TasmotaIp` to remote control the device (On|Off) via GUI
     - In `MQTTBroker` configure your MQQT broker, default is the Venus OS MQTT broker (127.0.0.1)
-    - In `[Topics]` section you can specify the L1 phase topic and the status topic. Check your tasmota device MQTT broker to get the correct ones
+    - In `[Topics]` section you can specify the L1 phase topic, the status topic and the state topic. Check your tasmota device MQTT broker to get the correct ones
     
       Example:
 
