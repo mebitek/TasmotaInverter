@@ -102,7 +102,7 @@ class TasmotaInverterService:
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path('/ProductId', 41601)
+        self._dbusservice.add_path('/ProductId', 6408)
         self._dbusservice.add_path('/ProductName', productname)
         self._dbusservice.add_path('/DeviceName', productname)
         self._dbusservice.add_path('/FirmwareVersion', 0x0136)
@@ -113,8 +113,8 @@ class TasmotaInverterService:
         self._dbusservice.add_path('/Devices/0/CustomName', productname)
         self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
         self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0136)
-        self._dbusservice.add_path('/Devices/0/ProductId', 0xA281)
-        self._dbusservice.add_path('/Devices/0/ProductName', "Smart Phoenix Inverter 12V 1600VA 230V")
+        self._dbusservice.add_path('/Devices/0/ProductId', 0x1908)
+        self._dbusservice.add_path('/Devices/0/ProductName', "MultiPlus Compact 12/2000/80-30")
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
         self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
         self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
@@ -155,9 +155,9 @@ class TasmotaInverterService:
         self._dbusservice['/Ac/Out/L1/P'] = self.inverter.power
         self._dbusservice['/Ac/Out/L1/S'] = self.inverter.apparent_power
 
-        self._dbusservice["/Ac/L1/Current"] = self.inverter.current
-        self._dbusservice["/Ac/L1/Power"] = self.inverter.power
-        self._dbusservice["/Ac/L1/Voltage"] = self.inverter.voltage
+        #self._dbusservice["/Ac/L1/Current"] = self.inverter.current
+        #self._dbusservice["/Ac/L1/Power"] = self.inverter.power
+        #self._dbusservice["/Ac/L1/Voltage"] = self.inverter.voltage
 
         self._dbusservice["/Dc/0/Voltage"] = self.inverter.battery_voltage
         if self.inverter.battery_voltage == 0 or None:
@@ -355,12 +355,20 @@ def main():
         deviceinstance=295,
         paths={
 
+            '/Ac/ActiveIn/Connected': {'initial': 1},
+            '/Ac/PowerMeasurementType': {'initial': 4},
+            '/Ac/NumberOfAcInputs': {'initial': 1},
+            '/Ac/NumberOfAcPhases': {'initial': 1},
             '/Ac/ActiveIn/ActiveInput': {'initial': 0},
+
             '/Ac/ActiveIn/CurrentLimit': {'initial': 15},
+
             '/Ac/ActiveIn/L1/F': {'initial': 50},
             '/Ac/ActiveIn/L1/I': {'initial': 0.743},
             '/Ac/ActiveIn/L1/P': {'initial': 209},
             '/Ac/ActiveIn/L1/V': {'initial': 231},
+            '/Ac/ActiveIn/P': {'initial': 209},
+            '/Ac/ActiveIn/S': {'initial': 245},
 
             '/Dc/0/Voltage': {'initial': 0},
             '/Dc/0/Current': {'initial': 0},
@@ -371,9 +379,7 @@ def main():
             '/Ac/Out/L1/I': {'initial': 0},
             '/Ac/Out/L1/P': {'initial': 0},
             '/Ac/Out/L1/S': {'initial': 0},
-            '/Ac/L1/Voltage': {'initial': 0},
-            '/Ac/L1/Current': {'initial': 0},
-            '/Ac/L1/Power': {'initial': 0},
+
             '/Alarms/LowVoltage': {'initial': 0},
             '/Alarms/HighTemperature': {'initial': 0},
             '/Alarms/Overload': {'initial': 0},
