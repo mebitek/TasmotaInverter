@@ -127,6 +127,9 @@ class TasmotaInverterService:
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
+
+        if self.inverter.state == 'Offline':
+            self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
         battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
         self.inverter.battery_voltage = battery_voltage.get_value()

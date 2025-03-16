@@ -1,3 +1,5 @@
+v0.4.3:
+    fix inverter shutdown: when invert is off the parameters are set to 0
 v0.4.2:
     refactoring code
 
