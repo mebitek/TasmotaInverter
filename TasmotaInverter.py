@@ -164,7 +164,7 @@ class TasmotaInverterService:
             dc_current = 0
         else:
             dc_current = round(float(self.inverter.power) / float(self.inverter.battery_voltage), 2)
-        self._dbusservice["/Dc/0/Current"] = -dc_current
+        self._dbusservice["/Dc/0/Current"] = dc_current
 
         mode, state = self.inverter.get_mode_and_state()
         self._dbusservice['/Mode'] = mode
