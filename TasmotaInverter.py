@@ -135,9 +135,7 @@ class TasmotaInverterService:
 
         if self.inverter.state == 'Offline':
             self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
-            mode, state = self.inverter.get_mode_and_state()
-            self._dbusservice['/Mode'] = mode
-            self._dbusservice['/State'] = state
+            self.disconnect()
             return True
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
         if 'com.victronenergy.system' not in dbus_conn.list_names():
@@ -214,6 +212,24 @@ class TasmotaInverterService:
             index = 0  # overflow from 255 to 0
         self._dbusservice['/UpdateIndex'] = index
         return True
+
+    def disconnect(self):
+        mode, state = self.inverter.get_mode_and_state()
+        self._dbusservice['/Mode'] = mode
+        self._dbusservice['/State'] = state
+        self._dbusservice['/Ac/Out/L1/F'] = None
+        self._dbusservice['/Ac/Out/L1/V'] = 0
+        self._dbusservice['/Ac/Out/L1/I'] = 0
+        self._dbusservice['/Ac/Out/L1/P'] = 0
+        self._dbusservice['/Ac/Out/L1/S'] = 0
+
+        self._dbusservice["/Ac/L1/Current"] = 0
+        self._dbusservice["/Ac/L1/Power"] = 0
+        self._dbusservice["/Ac/L1/Voltage"] = 0
+
+        self._dbusservice["/Dc/0/Voltage"] = 0
+        self._dbusservice["/Dc/0/Current"] = 0
+        self._dbusservice["/Dc/0/Power"] = 0
 
     # MQTT On message
     def on_message(self, client, userdata, msg):
