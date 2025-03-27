@@ -135,6 +135,9 @@ class TasmotaInverterService:
 
         if self.inverter.state == 'Offline':
             self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
+            mode, state = self.inverter.get_mode_and_state()
+            self._dbusservice['/Mode'] = mode
+            self._dbusservice['/State'] = state
             return True
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
         if 'com.victronenergy.system' not in dbus_conn.list_names():
