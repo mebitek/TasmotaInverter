@@ -1,3 +1,5 @@
+v0.4.4:
+    fix first boot error due to dbus not yet available
 v0.4.3:
     fix inverter shutdown: when invert is off the parameters are set to 0
 v0.4.2:

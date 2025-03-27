@@ -128,10 +128,22 @@ class TasmotaInverterService:
 
     def _update(self):
 
+        logging.debug("INVERTER: %s" % self.inverter.state)
+        logging.debug("INVERTER: %s" % self.inverter.power)
+        logging.debug("INVERTER: %s" % self.inverter.current)
+        logging.debug("INVERTER: %s" % self.inverter.voltage)
+
         if self.inverter.state == 'Offline':
             self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
+            return True
         dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
+        if 'com.victronenergy.system' not in dbus_conn.list_names():
+            logging.debug("* * * No DBUS_SESSION_BUS_ADDRESS in dbus")
+            return True
         battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
+        if battery_voltage.get_value() is None:
+            logging.debug("* * * No battery voltage in dbus")
+            return True
         self.inverter.battery_voltage = battery_voltage.get_value()
         # if inverter.battery_voltage == None:
         #    inverter.battery_voltage = 11.65
