@@ -128,84 +128,87 @@ class TasmotaInverterService:
 
     def _update(self):
 
-        logging.debug("INVERTER: %s" % self.inverter.state)
-        logging.debug("INVERTER: %s" % self.inverter.power)
-        logging.debug("INVERTER: %s" % self.inverter.current)
-        logging.debug("INVERTER: %s" % self.inverter.voltage)
+        try:
+            logging.debug("INVERTER: %s" % self.inverter.state)
+            logging.debug("INVERTER: %s" % self.inverter.power)
+            logging.debug("INVERTER: %s" % self.inverter.current)
+            logging.debug("INVERTER: %s" % self.inverter.voltage)
 
-        if self.inverter.state == 'Offline':
-            self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
-            self.disconnect()
-            return True
-        dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
-        if 'com.victronenergy.system' not in dbus_conn.list_names():
-            logging.debug("* * * No DBUS_SESSION_BUS_ADDRESS in dbus")
-            return True
-        battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
-        if battery_voltage.get_value() is None:
-            logging.debug("* * * No battery voltage in dbus")
-            return True
-        self.inverter.battery_voltage = battery_voltage.get_value()
-        # if inverter.battery_voltage == None:
-        #    inverter.battery_voltage = 11.65
+            if self.inverter.state == 'Offline':
+                self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
+                self.disconnect()
+                return True
+            dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
+            if 'com.victronenergy.system' not in dbus_conn.list_names():
+                logging.debug("* * * No DBUS_SESSION_BUS_ADDRESS in dbus")
+                return True
+            battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
+            if battery_voltage.get_value() is None:
+                logging.debug("* * * No battery voltage in dbus")
+                return True
+            self.inverter.battery_voltage = battery_voltage.get_value()
+            # if inverter.battery_voltage == None:
+            #    inverter.battery_voltage = 11.65
 
-        # inverter.battery_voltage = round(random.uniform(11.6, 14.65),2)
+            # inverter.battery_voltage = round(random.uniform(11.6, 14.65),2)
 
-        # else:
-        #    if float(inverter.battery_voltage) < 14:
-        #        inverter.battery_voltage = float(inverter.battery_voltage) + 1
-        #    elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
-        #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
-        # else:
-        #    if float(inverter.battery_voltage) < 12:
-        #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
-        # elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
-        #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+            # else:
+            #    if float(inverter.battery_voltage) < 14:
+            #        inverter.battery_voltage = float(inverter.battery_voltage) + 1
+            #    elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
+            #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+            # else:
+            #    if float(inverter.battery_voltage) < 12:
+            #        inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
+            # elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
+            #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
 
-        self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
-        self._dbusservice['/Ac/Out/L1/V'] = self.inverter.voltage
-        self._dbusservice['/Ac/Out/L1/I'] = self.inverter.current
-        self._dbusservice['/Ac/Out/L1/P'] = self.inverter.power
-        self._dbusservice['/Ac/Out/L1/S'] = self.inverter.apparent_power
+            self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
+            self._dbusservice['/Ac/Out/L1/V'] = self.inverter.voltage
+            self._dbusservice['/Ac/Out/L1/I'] = self.inverter.current
+            self._dbusservice['/Ac/Out/L1/P'] = self.inverter.power
+            self._dbusservice['/Ac/Out/L1/S'] = self.inverter.apparent_power
 
-        self._dbusservice["/Ac/L1/Current"] = self.inverter.current
-        self._dbusservice["/Ac/L1/Power"] = self.inverter.power
-        self._dbusservice["/Ac/L1/Voltage"] = self.inverter.voltage
+            self._dbusservice["/Ac/L1/Current"] = self.inverter.current
+            self._dbusservice["/Ac/L1/Power"] = self.inverter.power
+            self._dbusservice["/Ac/L1/Voltage"] = self.inverter.voltage
 
-        self._dbusservice["/Dc/0/Voltage"] = self.inverter.battery_voltage
-        if self.inverter.battery_voltage == 0 or None:
-            dc_current = 0
-        else:
-            dc_current = round(float(self.inverter.power) / float(self.inverter.battery_voltage), 2)
-        self._dbusservice["/Dc/0/Current"] = -dc_current
-        self._dbusservice["/Dc/0/Power"] = -self.inverter.power
-
-        mode, state = self.inverter.get_mode_and_state()
-        self._dbusservice['/Mode'] = mode
-        self._dbusservice['/State'] = state
-
-        # alarms
-        if self.inverter.temperature > float(self.config.get_high_temperature_limit()):
-            self._dbusservice['/Alarms/HighTemperature'] = 1
-        else:
-            self._dbusservice['/Alarms/HighTemperature'] = 0
-
-        overload = self.config.get_overload_limit() * 0.1 + self.config.get_overload_limit()
-        if self.inverter.power > overload:
-            self._dbusservice['/Alarms/Overload'] = 1
-        else:
-            self._dbusservice['/Alarms/Overload'] = 0
-
-        if self.inverter.battery_voltage is not None:
-            if float(self.inverter.battery_voltage) < float(self.config.get_low_voltage_limit()):
-                self._dbusservice['/Alarms/LowVoltage'] = 1
+            self._dbusservice["/Dc/0/Voltage"] = self.inverter.battery_voltage
+            if self.inverter.battery_voltage == 0 or None:
+                dc_current = 0
             else:
-                self._dbusservice['/Alarms/LowVoltage'] = 0
+                dc_current = round(float(self.inverter.power) / float(self.inverter.battery_voltage), 2)
+            self._dbusservice["/Dc/0/Current"] = -dc_current
+            self._dbusservice["/Dc/0/Power"] = -self.inverter.power
 
-            if float(self.inverter.battery_voltage) < float(self.config.get_low_battery_shutdown()):
-                self._dbusservice['/Alarms/LowVoltageShutdown'] = 1
-                if self.inverter.status != 'OFF':
-                    self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET")
+            mode, state = self.inverter.get_mode_and_state()
+            self._dbusservice['/Mode'] = mode
+            self._dbusservice['/State'] = state
+
+            # alarms
+            if self.inverter.temperature > float(self.config.get_high_temperature_limit()):
+                self._dbusservice['/Alarms/HighTemperature'] = 1
+            else:
+                self._dbusservice['/Alarms/HighTemperature'] = 0
+
+            overload = self.config.get_overload_limit() * 0.1 + self.config.get_overload_limit()
+            if self.inverter.power > overload:
+                self._dbusservice['/Alarms/Overload'] = 1
+            else:
+                self._dbusservice['/Alarms/Overload'] = 0
+
+            if self.inverter.battery_voltage is not None:
+                if float(self.inverter.battery_voltage) < float(self.config.get_low_voltage_limit()):
+                    self._dbusservice['/Alarms/LowVoltage'] = 1
+                else:
+                    self._dbusservice['/Alarms/LowVoltage'] = 0
+
+                if float(self.inverter.battery_voltage) < float(self.config.get_low_battery_shutdown()):
+                    self._dbusservice['/Alarms/LowVoltageShutdown'] = 1
+                    if self.inverter.status != 'OFF':
+                        self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET")
+        except Exception:
+            logging.exception("Exception while getting inverter status")
 
         index = self._dbusservice['/UpdateIndex'] + 1  # increment index
         if index > 255:  # maximum value of the index
@@ -272,23 +275,28 @@ class TasmotaInverterService:
         return True  # accept the change
 
     def tasmota_http_request(self, value, source):
-        ip = self.config.get_tasmota_ip()
-        if value == 4:
-            response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
-            self.inverter.status = "OFF"
-        elif value == 2 or value == 5:  # Ensure we handle both values correctly
-            if not self.can_start_due_voltage_limits():
+        try:
+            ip = self.config.get_tasmota_ip()
+            response = None
+            if value == 4:
+                response = requests.get(f"http://{ip}/cm?cmnd=Power%20off")
+                self.inverter.status = "OFF"
+            elif value == 2 or value == 5:  # Ensure we handle both values correctly
+                if not self.can_start_due_voltage_limits():
+                    return
+                response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
+                self.inverter.status = "ON"
+
+            if response is None:
+                logging.warning("Failed to send HTTP request.")
                 return
-            response = requests.get(f"http://{ip}/cm?cmnd=Power%20On")
-            self.inverter.status = "ON"
 
-        if response is None:
-            logging.warning("Failed to send HTTP request.")
+            # Update the status only if the request was successful
+            if response.status_code == 200:
+                logging.info(f"Status changed from {source}")
+        except Exception:
+            logging.exception("Failed to send HTTP request.")
             return
-
-        # Update the status only if the request was successful
-        if response.status_code == 200:
-            logging.info(f"Status changed from {source}")
 
     def can_start_due_voltage_limits(self):
         if float(self.inverter.battery_voltage) < float(
