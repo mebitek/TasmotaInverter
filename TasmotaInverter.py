@@ -102,7 +102,7 @@ class TasmotaInverterService:
         # Create the mandatory objects
         self._dbusservice.add_path('/DeviceInstance', deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path('/ProductId', 41601)
+        self._dbusservice.add_path('/ProductId', 41617)
         self._dbusservice.add_path('/ProductName', productname)
         self._dbusservice.add_path('/DeviceName', productname)
         self._dbusservice.add_path('/FirmwareVersion', 0x0136)
