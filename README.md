@@ -19,7 +19,7 @@ The script will check High Temperature, Overload and Low voltage alarms
 The script supports changing the status of the tasmota device from GUI
 
 The script supports **Victron Connect App VRM**:
-   * visualization as Smart Phoenix Inverter 12V 1600VA 230V
+   * visualization as Smart Phoenix Inverter 12V 2000VA 230V
    * change mode (On, Off, Eco)
    * change Low Battery Alarm
    * change Low Battery shutdown trigger
