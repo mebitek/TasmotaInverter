@@ -57,7 +57,7 @@ You need to configure you Tasmota MQQT to point to Venus OS MQTT broker
   4. on `new` enter the following:
      - `package name` -> `TasmotaInverter`
      - `GitHub user` -> `mebitek`
-     - `GitHub branch or tag` -> `master`
+     - `GitHub branch or tag` -> `master` - for venus os 3.60 use `3.60` branch
   5. go to `Active packages` and click on `TasmotaInverter`
      - click on `download` -> `proceed`
      - click on `install` -> `proceed`
