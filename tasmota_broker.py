@@ -1,6 +1,7 @@
 import logging
 
 import paho.mqtt.client as mqtt
+import paho.mqtt.client as mqtt_client
 
 
 class Broker:
@@ -9,7 +10,7 @@ class Broker:
         self.address = address
         self.port = port
 
-        self.client = mqtt.Client(self.name)
+        self.client = mqtt.Client(mqtt_client.CallbackAPIVersion.VERSION1, self.name)
 
         self.topic_category = {}
 

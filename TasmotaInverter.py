@@ -251,9 +251,11 @@ class TasmotaInverterService:
                         self.inverter.power = float(jsonpayload["ENERGY"]["Power"])
                         self.inverter.current = float(jsonpayload["ENERGY"]["Current"])
                         self.inverter.voltage = float(jsonpayload["ENERGY"]["Voltage"])
-                        self.inverter.temperature = float(jsonpayload["ESP32"]["Temperature"])
                         self.inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
 
+                        # Update temperature only if it exists in the payload
+                        if "ESP32" in jsonpayload and "Temperature" in jsonpayload["ESP32"]:
+                            self.inverter.temperature = float(jsonpayload["ESP32"]["Temperature"])
             else:
                 logging.debug("Topic not in configurd topics. This shouldn't be happen")
 
