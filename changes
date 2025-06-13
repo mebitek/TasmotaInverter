@@ -1,3 +1,6 @@
+v0.4.5:
+    Tasmota PowerDelta compatibility
+    venus 3.60 compatibile
 v0.4.4:
     fix first boot error due to dbus not yet available
 v0.4.3:
