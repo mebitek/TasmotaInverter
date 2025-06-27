@@ -1,3 +1,6 @@
+v0.4.5:
+    update firmware
+    compatibility with Tasmota PowerDelta (thanks to LosTigeros)
 v0.4.4:
     fix first boot error due to dbus not yet available
 v0.4.3:
