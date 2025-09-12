@@ -71,6 +71,9 @@ class TasmotaConfig:
     def get_topic_option(self, topic):
         return self.config.get('Topics', topic)
 
+    def get_efficency(self):
+        return self.config.get('Options', 'Efficency', fallback=92)
+
     def write_to_config(self, value, path, key):
         logging.debug("Writing config file %s %s " % (path, key))
         self.config[path][key] = str(value)

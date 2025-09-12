@@ -163,23 +163,26 @@ class TasmotaInverterService:
             # elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
             #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
 
+            efficency = self.config.get_efficency()
+            power = self.inverter.power / (efficency / 100)
+
             self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
             self._dbusservice['/Ac/Out/L1/V'] = self.inverter.voltage
             self._dbusservice['/Ac/Out/L1/I'] = self.inverter.current
-            self._dbusservice['/Ac/Out/L1/P'] = self.inverter.power
+            self._dbusservice['/Ac/Out/L1/P'] = power
             self._dbusservice['/Ac/Out/L1/S'] = self.inverter.apparent_power
 
             self._dbusservice["/Ac/L1/Current"] = self.inverter.current
-            self._dbusservice["/Ac/L1/Power"] = self.inverter.power
+            self._dbusservice["/Ac/L1/Power"] = power
             self._dbusservice["/Ac/L1/Voltage"] = self.inverter.voltage
 
             self._dbusservice["/Dc/0/Voltage"] = self.inverter.battery_voltage
             if self.inverter.battery_voltage == 0 or None:
                 dc_current = 0
             else:
-                dc_current = round(float(self.inverter.power) / float(self.inverter.battery_voltage), 2)
+                dc_current = round(float(power) / float(self.inverter.battery_voltage), 2)
             self._dbusservice["/Dc/0/Current"] = -dc_current
-            self._dbusservice["/Dc/0/Power"] = -self.inverter.power
+            self._dbusservice["/Dc/0/Power"] = -power
 
             mode, state = self.inverter.get_mode_and_state()
             self._dbusservice['/Mode'] = mode
