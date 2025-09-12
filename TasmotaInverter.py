@@ -163,7 +163,7 @@ class TasmotaInverterService:
             # elif float(inverter.battery_voltage) >= 14 and float(inverter.battery_voltage) <= 14.65:
             #    inverter.battery_voltage = float(inverter.battery_voltage) + 0.01
 
-            efficency = self.config.get_efficency()
+            efficency = int(self.config.get_efficency())
             power = self.inverter.power / (efficency / 100)
 
             self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
