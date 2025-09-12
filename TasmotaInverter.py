@@ -166,6 +166,9 @@ class TasmotaInverterService:
             efficency = int(self.config.get_efficency())
             power = self.inverter.power / (efficency / 100)
 
+            logging.debug("INVERTER: %s" % efficency)
+            logging.debug("* INVERTER: %s" % power)
+
             self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
             self._dbusservice['/Ac/Out/L1/V'] = self.inverter.voltage
             self._dbusservice['/Ac/Out/L1/I'] = self.inverter.current
