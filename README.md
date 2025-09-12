@@ -97,4 +97,6 @@ it means that the service is still running or another service is using that bus 
 ### Hardware
 
 Any Tasmota device, which has a Power Sensor.
-Tested with NOUS A8T
+Tested with: 
+* NOUS A8T
+* Greensun HS1-TAS-EU
