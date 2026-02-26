@@ -110,7 +110,7 @@ class TasmotaInverterService:
         # Create the mandatory objects
         self._dbusservice.add_path("/DeviceInstance", deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path("/ProductId", 41633)
+        self._dbusservice.add_path("/ProductId", config.get_product_id())
         self._dbusservice.add_path("/ProductName", productname)
         self._dbusservice.add_path("/DeviceName", productname)
         self._dbusservice.add_path("/FirmwareVersion", 0x0137)
@@ -121,9 +121,9 @@ class TasmotaInverterService:
         self._dbusservice.add_path("/Devices/0/CustomName", productname)
         self._dbusservice.add_path("/Devices/0/DeviceInstance", deviceinstance)
         self._dbusservice.add_path("/Devices/0/FirmwareVersion", 0x0137)
-        self._dbusservice.add_path("/Devices/0/ProductId", 0xA2A1)
+        self._dbusservice.add_path("/Devices/0/ProductId", config.get_vrm_product_id())
         self._dbusservice.add_path(
-            "/Devices/0/ProductName", "Smart Phoenix Inverter 12V 3000VA 230V"
+            "/Devices/0/ProductName", "Smart Phoenix Inverter 12V 2000VA 230V"
         )
         self._dbusservice.add_path("/Devices/0/ServiceName", servicename)
         self._dbusservice.add_path("/Devices/0/Serial", config.get_serial())
