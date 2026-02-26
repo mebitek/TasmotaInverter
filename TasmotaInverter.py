@@ -37,7 +37,7 @@ from vreg_link_item import VregLinkItem, InverterReg, GenericReg
 
 class Inverter:
     def __init__(self, status, voltage, current, power, temperature):
-        self.state = 'Offline'
+        self.state = "Offline"
         self.status = status
         self.voltage = voltage
         self.current = current
@@ -52,9 +52,9 @@ class Inverter:
         #           251=Passthrough;252=Standby;253=Hibernate
         # /State <- 0=Off; 1=Low Power; 2=Fault; 9=Inverting
 
-        if self.state == 'Offline':
+        if self.state == "Offline":
             return 4, 0
-        if self.status == 'ON':
+        if self.status == "ON":
             if self.power > 15:
                 return 2, 9
             else:
@@ -64,9 +64,15 @@ class Inverter:
 
 
 class TasmotaInverterService:
-
-    def __init__(self, servicename, deviceinstance, paths, productname='Tasmota Inverter', connection='MQTT',
-                 config=None):
+    def __init__(
+        self,
+        servicename,
+        deviceinstance,
+        paths,
+        productname="Tasmota Inverter",
+        connection="MQTT",
+        config=None,
+    ):
 
         self.config = config or TasmotaConfig()
         # prepare dict for topic categories
@@ -74,7 +80,9 @@ class TasmotaInverterService:
         self.get_topics()
 
         # broker
-        self.broker = Broker(config.get_mqtt_name(), config.get_mqtt_address(), config.get_mqtt_port())
+        self.broker = Broker(
+            config.get_mqtt_name(), config.get_mqtt_address(), config.get_mqtt_port()
+        )
         self.broker.topic_category = self.topic_category
         self.broker.on_message(self.on_message)
         self.broker.connect_broker()
@@ -86,42 +94,48 @@ class TasmotaInverterService:
         self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
 
-        vregtype = lambda *args, **kwargs: VregLinkItem(*args, **kwargs,
-                                                        getvreg=self.vreglink_get, setvreg=self.vreglink_set)
+        vregtype = lambda *args, **kwargs: VregLinkItem(
+            *args, **kwargs, getvreg=self.vreglink_get, setvreg=self.vreglink_set
+        )
 
-        logging.debug("%s /DeviceInstance = %d" %
-                      (servicename, deviceinstance))
+        logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
 
         productname = config.get_product_name()
 
         # Create the management objects, as specified in the ccgx dbus-api document
-        self._dbusservice.add_path('/Mgmt/ProcessName', __file__)
-        self._dbusservice.add_path('/Mgmt/ProcessVersion', config.get_version())
-        self._dbusservice.add_path('/Mgmt/Connection', connection)
+        self._dbusservice.add_path("/Mgmt/ProcessName", __file__)
+        self._dbusservice.add_path("/Mgmt/ProcessVersion", config.get_version())
+        self._dbusservice.add_path("/Mgmt/Connection", connection)
 
         # Create the mandatory objects
-        self._dbusservice.add_path('/DeviceInstance', deviceinstance)
+        self._dbusservice.add_path("/DeviceInstance", deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path('/ProductId', 41617)
-        self._dbusservice.add_path('/ProductName', productname)
-        self._dbusservice.add_path('/DeviceName', productname)
-        self._dbusservice.add_path('/FirmwareVersion', 0x0137)
-        self._dbusservice.add_path('/HardwareVersion', 8)
-        self._dbusservice.add_path('/Connected', 1)
-        self._dbusservice.add_path('/Serial', config.get_serial())
+        self._dbusservice.add_path("/ProductId", 41633)
+        self._dbusservice.add_path("/ProductName", productname)
+        self._dbusservice.add_path("/DeviceName", productname)
+        self._dbusservice.add_path("/FirmwareVersion", 0x0137)
+        self._dbusservice.add_path("/HardwareVersion", 8)
+        self._dbusservice.add_path("/Connected", 1)
+        self._dbusservice.add_path("/Serial", config.get_serial())
 
-        self._dbusservice.add_path('/Devices/0/CustomName', productname)
-        self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
-        self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0137)
-        self._dbusservice.add_path('/Devices/0/ProductId', 0xA291)
-        self._dbusservice.add_path('/Devices/0/ProductName', "Smart Phoenix Inverter 12V 2000VA 230V")
-        self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
-        self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
-        self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
+        self._dbusservice.add_path("/Devices/0/CustomName", productname)
+        self._dbusservice.add_path("/Devices/0/DeviceInstance", deviceinstance)
+        self._dbusservice.add_path("/Devices/0/FirmwareVersion", 0x0137)
+        self._dbusservice.add_path("/Devices/0/ProductId", 0xA2A1)
+        self._dbusservice.add_path(
+            "/Devices/0/ProductName", "Smart Phoenix Inverter 12V 2000VA 230V"
+        )
+        self._dbusservice.add_path("/Devices/0/ServiceName", servicename)
+        self._dbusservice.add_path("/Devices/0/Serial", config.get_serial())
+        self._dbusservice.add_path("/Devices/0/VregLink", None, itemtype=vregtype)
 
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
-                path, settings['initial'], writeable=True, onchangecallback=self._handlechangedvalue)
+                path,
+                settings["initial"],
+                writeable=True,
+                onchangecallback=self._handlechangedvalue,
+            )
 
         self._dbusservice.register()
         GLib.timeout_add(1000, self._update)
@@ -134,15 +148,21 @@ class TasmotaInverterService:
             logging.debug("INVERTER: %s" % self.inverter.current)
             logging.debug("INVERTER: %s" % self.inverter.voltage)
 
-            if self.inverter.state == 'Offline':
+            if self.inverter.state == "Offline":
                 self.inverter.__init__("Off", 0, 0, 0, self.inverter.temperature)
                 self.disconnect()
                 return True
-            dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
-            if 'com.victronenergy.system' not in dbus_conn.list_names():
+            dbus_conn = (
+                dbus.SessionBus()
+                if "DBUS_SESSION_BUS_ADDRESS" in os.environ
+                else dbus.SystemBus()
+            )
+            if "com.victronenergy.system" not in dbus_conn.list_names():
                 logging.debug("* * * No DBUS_SESSION_BUS_ADDRESS in dbus")
                 return True
-            battery_voltage = VeDbusItemImport(dbus_conn, 'com.victronenergy.system', '/Dc/Battery/Voltage')
+            battery_voltage = VeDbusItemImport(
+                dbus_conn, "com.victronenergy.system", "/Dc/Battery/Voltage"
+            )
             if battery_voltage.get_value() is None:
                 logging.debug("* * * No battery voltage in dbus")
                 return True
@@ -169,11 +189,11 @@ class TasmotaInverterService:
             logging.debug("INVERTER: %s" % efficency)
             logging.debug("* INVERTER: %s" % power)
 
-            self._dbusservice['/Ac/Out/L1/F'] = self.inverter.frequency
-            self._dbusservice['/Ac/Out/L1/V'] = self.inverter.voltage
-            self._dbusservice['/Ac/Out/L1/I'] = self.inverter.current
-            self._dbusservice['/Ac/Out/L1/P'] = power
-            self._dbusservice['/Ac/Out/L1/S'] = self.inverter.apparent_power
+            self._dbusservice["/Ac/Out/L1/F"] = self.inverter.frequency
+            self._dbusservice["/Ac/Out/L1/V"] = self.inverter.voltage
+            self._dbusservice["/Ac/Out/L1/I"] = self.inverter.current
+            self._dbusservice["/Ac/Out/L1/P"] = power
+            self._dbusservice["/Ac/Out/L1/S"] = self.inverter.apparent_power
 
             self._dbusservice["/Ac/L1/Current"] = self.inverter.current
             self._dbusservice["/Ac/L1/Power"] = power
@@ -183,54 +203,65 @@ class TasmotaInverterService:
             if self.inverter.battery_voltage == 0 or None:
                 dc_current = 0
             else:
-                dc_current = round(float(power) / float(self.inverter.battery_voltage), 2)
+                dc_current = round(
+                    float(power) / float(self.inverter.battery_voltage), 2
+                )
             self._dbusservice["/Dc/0/Current"] = -dc_current
             self._dbusservice["/Dc/0/Power"] = -power
 
             mode, state = self.inverter.get_mode_and_state()
-            self._dbusservice['/Mode'] = mode
-            self._dbusservice['/State'] = state
+            self._dbusservice["/Mode"] = mode
+            self._dbusservice["/State"] = state
 
             # alarms
-            if self.inverter.temperature > float(self.config.get_high_temperature_limit()):
-                self._dbusservice['/Alarms/HighTemperature'] = 1
+            if self.inverter.temperature > float(
+                self.config.get_high_temperature_limit()
+            ):
+                self._dbusservice["/Alarms/HighTemperature"] = 1
             else:
-                self._dbusservice['/Alarms/HighTemperature'] = 0
+                self._dbusservice["/Alarms/HighTemperature"] = 0
 
-            overload = self.config.get_overload_limit() * 0.1 + self.config.get_overload_limit()
+            overload = (
+                self.config.get_overload_limit() * 0.1
+                + self.config.get_overload_limit()
+            )
             if self.inverter.power > overload:
-                self._dbusservice['/Alarms/Overload'] = 1
+                self._dbusservice["/Alarms/Overload"] = 1
             else:
-                self._dbusservice['/Alarms/Overload'] = 0
+                self._dbusservice["/Alarms/Overload"] = 0
 
             if self.inverter.battery_voltage is not None:
-                if float(self.inverter.battery_voltage) < float(self.config.get_low_voltage_limit()):
-                    self._dbusservice['/Alarms/LowVoltage'] = 1
+                if float(self.inverter.battery_voltage) < float(
+                    self.config.get_low_voltage_limit()
+                ):
+                    self._dbusservice["/Alarms/LowVoltage"] = 1
                 else:
-                    self._dbusservice['/Alarms/LowVoltage'] = 0
+                    self._dbusservice["/Alarms/LowVoltage"] = 0
 
-                if float(self.inverter.battery_voltage) < float(self.config.get_low_battery_shutdown()):
-                    self._dbusservice['/Alarms/LowVoltageShutdown'] = 1
-                    if self.inverter.status != 'OFF':
+                if float(self.inverter.battery_voltage) < float(
+                    self.config.get_low_battery_shutdown()
+                ):
+                    self._dbusservice["/Alarms/LowVoltageShutdown"] = 1
+                    if self.inverter.status != "OFF":
                         self.tasmota_http_request(4, "VE_REG_SHUTDOWN_LOW_VOLTAGE_SET")
         except Exception:
             logging.exception("Exception while getting inverter status")
 
-        index = self._dbusservice['/UpdateIndex'] + 1  # increment index
+        index = self._dbusservice["/UpdateIndex"] + 1  # increment index
         if index > 255:  # maximum value of the index
             index = 0  # overflow from 255 to 0
-        self._dbusservice['/UpdateIndex'] = index
+        self._dbusservice["/UpdateIndex"] = index
         return True
 
     def disconnect(self):
         mode, state = self.inverter.get_mode_and_state()
-        self._dbusservice['/Mode'] = mode
-        self._dbusservice['/State'] = state
-        self._dbusservice['/Ac/Out/L1/F'] = None
-        self._dbusservice['/Ac/Out/L1/V'] = 0
-        self._dbusservice['/Ac/Out/L1/I'] = 0
-        self._dbusservice['/Ac/Out/L1/P'] = 0
-        self._dbusservice['/Ac/Out/L1/S'] = 0
+        self._dbusservice["/Mode"] = mode
+        self._dbusservice["/State"] = state
+        self._dbusservice["/Ac/Out/L1/F"] = None
+        self._dbusservice["/Ac/Out/L1/V"] = 0
+        self._dbusservice["/Ac/Out/L1/I"] = 0
+        self._dbusservice["/Ac/Out/L1/P"] = 0
+        self._dbusservice["/Ac/Out/L1/S"] = 0
 
         self._dbusservice["/Ac/L1/Current"] = 0
         self._dbusservice["/Ac/L1/Power"] = 0
@@ -243,30 +274,39 @@ class TasmotaInverterService:
     # MQTT On message
     def on_message(self, client, userdata, msg):
         try:
-            logging.debug('Incoming message from: ' + msg.topic)
+            logging.debug("Incoming message from: " + msg.topic)
 
             # write the values into dict
             if msg.topic in self.topic_category:
-                if self.topic_category[msg.topic] == 'LWT':
-                    self.inverter.state = msg.payload.decode('utf-8')
+                if self.topic_category[msg.topic] == "LWT":
+                    self.inverter.state = msg.payload.decode("utf-8")
                 else:
                     jsonpayload = json.loads(msg.payload)
-                    if self.topic_category[msg.topic] == 'CONFIG':
-                        self.inverter.status = jsonpayload['POWER']
+                    if self.topic_category[msg.topic] == "CONFIG":
+                        self.inverter.status = jsonpayload["POWER"]
                     else:
                         self.inverter.power = float(jsonpayload["ENERGY"]["Power"])
                         self.inverter.current = float(jsonpayload["ENERGY"]["Current"])
                         self.inverter.voltage = float(jsonpayload["ENERGY"]["Voltage"])
-                        self.inverter.apparent_power = float(jsonpayload["ENERGY"]["ApparentPower"])
+                        self.inverter.apparent_power = float(
+                            jsonpayload["ENERGY"]["ApparentPower"]
+                        )
 
                         # Update temperature only if it exists in the payload
-                        if "ESP32" in jsonpayload and "Temperature" in jsonpayload["ESP32"]:
-                            self.inverter.temperature = float(jsonpayload["ESP32"]["Temperature"])
+                        if (
+                            "ESP32" in jsonpayload
+                            and "Temperature" in jsonpayload["ESP32"]
+                        ):
+                            self.inverter.temperature = float(
+                                jsonpayload["ESP32"]["Temperature"]
+                            )
             else:
                 logging.debug("Topic not in configurd topics. This shouldn't be happen")
 
         except Exception as e:
-            logging.exception("Error in handling of received message payload: " + msg.payload)
+            logging.exception(
+                "Error in handling of received message payload: " + msg.payload
+            )
             logging.exception(e)
 
     def _handlechangedvalue(self, path, value):
@@ -277,7 +317,7 @@ class TasmotaInverterService:
             value_str = str(value)
             if value_str.startswith("."):
                 value_str = "0%s" % value_str
-            parts = path.split('/')
+            parts = path.split("/")
             p, k = parts[-2:]
             self.config.write_to_config(value_str, p, k)
         return True  # accept the change
@@ -307,25 +347,30 @@ class TasmotaInverterService:
             return
 
     def can_start_due_voltage_limits(self):
-        if float(self.inverter.battery_voltage) < float(
-                self.config.get_low_voltage_limit()) and self._dbusservice.__getitem__(
-            '/Alarms/LowVoltageShutdown') == 0:
-            logging.info("Cannot turn on the device, low battery restart and alarm has not been reached")
-            return False
-        if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1 and float(
-                self.inverter.battery_voltage) < float(
-            self.config.get_charge_detected()):
+        if (
+            float(self.inverter.battery_voltage)
+            < float(self.config.get_low_voltage_limit())
+            and self._dbusservice.__getitem__("/Alarms/LowVoltageShutdown") == 0
+        ):
             logging.info(
-                "Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage")
+                "Cannot turn on the device, low battery restart and alarm has not been reached"
+            )
             return False
-        if self._dbusservice.__getitem__('/Alarms/LowVoltageShutdown') == 1:
-            self._dbusservice['/Alarms/LowVoltageShutdown'] = 0
+        if self._dbusservice.__getitem__("/Alarms/LowVoltageShutdown") == 1 and float(
+            self.inverter.battery_voltage
+        ) < float(self.config.get_charge_detected()):
+            logging.info(
+                "Cannot turn on the device, shutdown detected for low battery and battery voltage has no reached the charged voltage"
+            )
+            return False
+        if self._dbusservice.__getitem__("/Alarms/LowVoltageShutdown") == 1:
+            self._dbusservice["/Alarms/LowVoltageShutdown"] = 0
         return True
 
     def get_topics(self):
-        self.topic_category[self.config.get_topic_option('L1')] = 'L1'
-        self.topic_category[self.config.get_topic_option('CONFIG')] = 'CONFIG'
-        self.topic_category[self.config.get_topic_option('LWT')] = 'LWT'
+        self.topic_category[self.config.get_topic_option("L1")] = "L1"
+        self.topic_category[self.config.get_topic_option("CONFIG")] = "CONFIG"
+        self.topic_category[self.config.get_topic_option("LWT")] = "LWT"
 
     # Vreg methods get/set
     def vreglink_get(self, regid):
@@ -340,7 +385,10 @@ class TasmotaInverterService:
             return GenericReg.OK.value, [self.inverter.current]
         elif regid == InverterReg.VE_REG_DC_CHANNEL1_VOLTAGE.value:
             return GenericReg.OK.value, [self.inverter.battery_voltage]
-        elif regid == InverterReg.VE_REG_AC_OUTPUT_L1_APPARENT_POWER.value or regid == InverterReg.VE_REG_AC_OUT_APPARENT_POWER.value:
+        elif (
+            regid == InverterReg.VE_REG_AC_OUTPUT_L1_APPARENT_POWER.value
+            or regid == InverterReg.VE_REG_AC_OUT_APPARENT_POWER.value
+        ):
             return GenericReg.OK.value, [self.inverter.apparent_power]
         elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET.value:
             low_battery_shutdown = float(self.config.get_low_battery_shutdown())
@@ -358,7 +406,9 @@ class TasmotaInverterService:
         elif regid == InverterReg.VE_REG_INV_OPER_ECO_MODE_RETRY_TIME.value:
             return GenericReg.OK.value, [0x0A]  # 3s
         elif regid == InverterReg.VE_REG_CAPABILITIES1.value:
-            return GenericReg.OK.value, utils.create_capabilities_status(False, False, False, False, True)
+            return GenericReg.OK.value, utils.create_capabilities_status(
+                False, False, False, False, True
+            )
         else:
             logging.debug("GET REG_ID %s" % regid)
             return GenericReg.OK.value, []
@@ -366,17 +416,19 @@ class TasmotaInverterService:
     def vreglink_set(self, regid, data):
         logging.debug(" * * * SET REGID %s" % hex(regid))
         if regid == InverterReg.VE_REG_DEVICE_MODE.value:  # change state
-            value = int.from_bytes(data, byteorder='little')
+            value = int.from_bytes(data, byteorder="little")
             self.tasmota_http_request(value, "VictronConnect")
         elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_SET.value:
             decimal = utils.convert_to_decimal(bytearray(data))
-            self.config.write_to_config(decimal, 'Warnings', 'LowVoltage')
-        elif regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET.value:  # change low battery shutdown -
+            self.config.write_to_config(decimal, "Warnings", "LowVoltage")
+        elif (
+            regid == InverterReg.VE_REG_SHUTDOWN_LOW_VOLTAGE_SET.value
+        ):  # change low battery shutdown -
             decimal = utils.convert_to_decimal(bytearray(data))
-            self.config.write_to_config(decimal, 'Options', 'LowBatteryShutdown')
+            self.config.write_to_config(decimal, "Options", "LowBatteryShutdown")
         elif regid == InverterReg.VE_REG_ALARM_LOW_VOLTAGE_CLEAR.value:
             decimal = utils.convert_to_decimal(bytearray(data))
-            self.config.write_to_config(decimal, 'Options', 'ChargeDetected')
+            self.config.write_to_config(decimal, "Options", "ChargeDetected")
 
         return GenericReg.OK.value, data
 
@@ -394,58 +446,68 @@ def main():
     thread.daemon = True  # allow the program to quit
 
     from dbus.mainloop.glib import DBusGMainLoop
+
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
 
     pvac_output = TasmotaInverterService(
-        servicename='com.victronenergy.inverter.tasmota',
+        servicename="com.victronenergy.inverter.tasmota",
         deviceinstance=295,
         paths={
-            '/Dc/0/Voltage': {'initial': 0},
-            '/Dc/0/Current': {'initial': 0},
-            '/Dc/0/Power': {'initial': 0},
-            '/Ac/Power': {'initial': 0},
-            '/Ac/Out/L1/F': {'initial': 50},
-            '/Ac/Out/L1/V': {'initial': 0},
-            '/Ac/Out/L1/I': {'initial': 0},
-            '/Ac/Out/L1/P': {'initial': 0},
-            '/Ac/Out/L1/S': {'initial': 0},
-            '/Ac/L1/Voltage': {'initial': 0},
-            '/Ac/L1/Current': {'initial': 0},
-            '/Ac/L1/Power': {'initial': 0},
-            '/Alarms/LowVoltage': {'initial': 0},
-            '/Alarms/HighTemperature': {'initial': 0},
-            '/Alarms/Overload': {'initial': 0},
-            '/Alarms/LowVoltageShutdown': {'initial': 0},
-            '/Mode': {'initial': 2},
-            '/State': {'initial': 0},
-
-            '/Settings/Tasmota/Setup/Name': {'initial': config.get_inverter_name()},
-            '/Settings/Tasmota/Setup/Serial': {'initial': config.get_inverter_serial()},
-
-            '/Settings/Tasmota/Setup/TasmotaIp': {'initial': config.get_tasmota_ip()},
-
-            '/Settings/Tasmota/MQTTBroker/Address': {'initial': config.get_mqtt_address()},
-            '/Settings/Tasmota/MQTTBroker/Port': {'initial': config.get_mqtt_port()},
-            '/Settings/Tasmota/MQTTBroker/Name': {'initial': config.get_mqtt_name()},
-
-            '/Settings/Tasmota/Warnings/HighTemperature': {'initial': config.get_high_temperature_limit()},
-            '/Settings/Tasmota/Warnings/Overload': {'initial': config.get_overload_limit()},
-            '/Settings/Tasmota/Warnings/LowVoltage': {'initial': config.get_low_voltage_limit()},
-
-            '/Settings/Tasmota/Options/LowBatteryShutdown': {'initial': config.get_low_battery_shutdown()},
-            '/Settings/Tasmota/Options/ChargeDetected': {'initial': config.get_charge_detected()},
-
-            '/Settings/Tasmota/Topics/L1': {'initial': config.get_topic_option("L1")},
-            '/Settings/Tasmota/Topics/CONFIG': {'initial': config.get_topic_option("CONFIG")},
-            '/Settings/Tasmota/Topics/LWT': {'initial': config.get_topic_option("LWT")},
-
-            '/UpdateIndex': {'initial': 0}
+            "/Dc/0/Voltage": {"initial": 0},
+            "/Dc/0/Current": {"initial": 0},
+            "/Dc/0/Power": {"initial": 0},
+            "/Ac/Power": {"initial": 0},
+            "/Ac/Out/L1/F": {"initial": 50},
+            "/Ac/Out/L1/V": {"initial": 0},
+            "/Ac/Out/L1/I": {"initial": 0},
+            "/Ac/Out/L1/P": {"initial": 0},
+            "/Ac/Out/L1/S": {"initial": 0},
+            "/Ac/L1/Voltage": {"initial": 0},
+            "/Ac/L1/Current": {"initial": 0},
+            "/Ac/L1/Power": {"initial": 0},
+            "/Alarms/LowVoltage": {"initial": 0},
+            "/Alarms/HighTemperature": {"initial": 0},
+            "/Alarms/Overload": {"initial": 0},
+            "/Alarms/LowVoltageShutdown": {"initial": 0},
+            "/Mode": {"initial": 2},
+            "/State": {"initial": 0},
+            "/Settings/Tasmota/Setup/Name": {"initial": config.get_inverter_name()},
+            "/Settings/Tasmota/Setup/Serial": {"initial": config.get_inverter_serial()},
+            "/Settings/Tasmota/Setup/TasmotaIp": {"initial": config.get_tasmota_ip()},
+            "/Settings/Tasmota/MQTTBroker/Address": {
+                "initial": config.get_mqtt_address()
+            },
+            "/Settings/Tasmota/MQTTBroker/Port": {"initial": config.get_mqtt_port()},
+            "/Settings/Tasmota/MQTTBroker/Name": {"initial": config.get_mqtt_name()},
+            "/Settings/Tasmota/Warnings/HighTemperature": {
+                "initial": config.get_high_temperature_limit()
+            },
+            "/Settings/Tasmota/Warnings/Overload": {
+                "initial": config.get_overload_limit()
+            },
+            "/Settings/Tasmota/Warnings/LowVoltage": {
+                "initial": config.get_low_voltage_limit()
+            },
+            "/Settings/Tasmota/Options/LowBatteryShutdown": {
+                "initial": config.get_low_battery_shutdown()
+            },
+            "/Settings/Tasmota/Options/ChargeDetected": {
+                "initial": config.get_charge_detected()
+            },
+            "/Settings/Tasmota/Topics/L1": {"initial": config.get_topic_option("L1")},
+            "/Settings/Tasmota/Topics/CONFIG": {
+                "initial": config.get_topic_option("CONFIG")
+            },
+            "/Settings/Tasmota/Topics/LWT": {"initial": config.get_topic_option("LWT")},
+            "/UpdateIndex": {"initial": 0},
         },
-        config=config
+        config=config,
     )
 
-    logging.info('Connected to dbus, and switching over to GLib.MainLoop() (= event based)')
+    logging.info(
+        "Connected to dbus, and switching over to GLib.MainLoop() (= event based)"
+    )
     mainloop = GLib.MainLoop()
     mainloop.run()
 
