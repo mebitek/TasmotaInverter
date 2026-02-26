@@ -43,10 +43,10 @@ class TasmotaConfig:
             return False
 
     def get_product_id(self):
-        return self.config.get("Setup", "productId", fallback="41617")
+        return self.config.get("Setup", "productId", fallback="41633")
 
     def get_vrm_product_id(self):
-        return self.config.get("Setup", "vrmProductId", fallback="0xA291")
+        return self.config.get("Setup", "vrmProductId", fallback="0xA2A1")
 
     def get_mqtt_address(self):
         address = self.config.get("MQTTBroker", "address", fallback=None)
