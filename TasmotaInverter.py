@@ -123,7 +123,7 @@ class TasmotaInverterService:
         self._dbusservice.add_path("/Devices/0/FirmwareVersion", 0x0137)
         self._dbusservice.add_path("/Devices/0/ProductId", config.get_vrm_product_id())
         self._dbusservice.add_path(
-            "/Devices/0/ProductName", "Smart Phoenix Inverter 12V 2000VA 230V"
+            "/Devices/0/ProductName", "Smart Phoenix Inverter 12V 3000VA 230V"
         )
         self._dbusservice.add_path("/Devices/0/ServiceName", servicename)
         self._dbusservice.add_path("/Devices/0/Serial", config.get_serial())
