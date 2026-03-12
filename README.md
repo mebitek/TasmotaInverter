@@ -1,4 +1,4 @@
-# venus.TasmotaInverter v0.4.7
+# venus.TasmotaInverter v0.4.8
 
 Service to integrate a tasmota wallplug sensor data as inverter.
 

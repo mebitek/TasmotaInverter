@@ -288,9 +288,9 @@ class TasmotaInverterService:
         self._dbusservice["/Ac/L1/Power"] = 0
         self._dbusservice["/Ac/L1/Voltage"] = 0
 
-        self._dbusservice["/Dc/0/Voltage"] = 0
-        self._dbusservice["/Dc/0/Current"] = 0
-        self._dbusservice["/Dc/0/Power"] = 0
+        #self._dbusservice["/Dc/0/Voltage"] = 0
+        #self._dbusservice["/Dc/0/Current"] = 0
+        #self._dbusservice["/Dc/0/Power"] = 0
 
     # MQTT On message
     def on_message(self, client, userdata, msg):
